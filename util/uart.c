@@ -24,6 +24,11 @@ bool uart_receive_byte(uint8_t* buffer){
 	return true;
 }
 
+void uart_flush(){
+	uint8_t dummy;
+	while ( UCSR0A & (1<<RXC0) ) dummy = UDR0;
+}
+
 void uart_init(){
 	UBRR0 = 0;		//0==500000 baud rate.  12==38400 baud rate
 	UCSR0B = (1<<RXEN0)|(1<<TXEN0)|(1<<RXCIE0);
