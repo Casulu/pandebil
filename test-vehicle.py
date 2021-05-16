@@ -1,7 +1,7 @@
 import serial
 import paho.mqtt.client as mqtt
 
-serialport = 'COM1'
+serialport = 'COM14'    # Niclas får ändra
 baudrate = 500000
 broker = "tfe.iotwan.se"
 brokerport = 1883
@@ -43,9 +43,6 @@ try:
     client.connect_async(broker, brokerport, 60)
         
     client.loop_start()
-
-    topics = {0:'pandebil/to_car', 1:'pandebil/from_car', 2:'pandebil/info'}
-
         
     while True:
         try:
@@ -59,14 +56,11 @@ try:
         if len(split_line) < 2:
             print(f"Incorrectly formatted line: {line}")
             continue
-        topic_index = split_line[0]
-        try:
-            out_topic = topics[int(topic_index)]
-        except:
+        if split_line[0] != 0:
             print(f"Invalid topic identifier in line: {line}")
             continue
         print("publishing \"{}\"".format(line))
-        client.publish(out_topic, line)
+        client.publish('pandebil/from_car', line)
 
 # handle list index error (i.e. assume no data received)
 except (IndexError):
