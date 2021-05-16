@@ -5,7 +5,7 @@ serialport = 'COM1'
 baudrate = 500000
 broker = "tfe.iotwan.se"
 brokerport = 1883
-subscribe_topics = ["pandebil/#"]
+subscribe_topics = ["pandebil/from_car", "pandebil/to_rem1"]
 
 def cleanup():
     ser.close()
@@ -13,9 +13,6 @@ def cleanup():
 #MQTT callbacks
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
-
-    # Subscribing in on_connect() means that if we lose the connection and
-    # reconnect then subscriptions will be renewed.
     for t in subscribe_topics:
         client.subscribe(t)
 
@@ -44,7 +41,7 @@ try:
         
     client.loop_start()
 
-    topics = {0:'pandebil/to_car', 1:'pandebil/from_car', 2:'pandebil/info'}
+    topics = {0:'pandebil/to_car', 3:'pandebil/to_rem2'}
 
         
     while True:
