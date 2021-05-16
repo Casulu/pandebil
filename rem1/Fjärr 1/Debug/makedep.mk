@@ -2,15 +2,15 @@
 # Automatically-generated file. Do not edit or delete the file
 ################################################################################
 
-adc.c
-
-lcd.c
-
 main.c
 
-spi.c
+util\adc.c
 
-summer.c
+util\lcd.c
 
-uart.c
+util\spi.c
+
+util\summer.c
+
+util\uart.c
 

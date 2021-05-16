@@ -11,10 +11,10 @@
 #include <avr/interrupt.h>
 #include <string.h>
 #include "uart.h"
-#include "lcd.h"
-#include "spi.h"
-#include "adc.h"
-#include "summer.h"
+#include "util/lcd.h"
+#include "util/spi.h"
+#include "util/adc.h"
+#include "util/summer.h"
 
 #define BTN_DDR DDRD
 #define BTN_PORT PORTD
