@@ -31,7 +31,7 @@
 void btn_init();
 void led_init();
 
-volatile char uart_linebuf[40];
+volatile uint8_t uart_linebuf[40];
 volatile uint8_t uart_bufind = 0;
 
 static int uart_put_char(char c, FILE* stream){
@@ -72,21 +72,23 @@ ISR(USART_RX_vect){
 		//Do something
 		clear_line(0);
 		set_cursor_pos(0);
-		write_lcd_string(uart_linebuf);
-		if(uart_linebuf[2] == 'l'){
-			switch(uart_linebuf[4]){
-				case '1':
-					LED_PORT ^= 1<<LEDR1;
-					break;
-				case '2':
-					LED_PORT ^= 1<<LEDR2;
-					break;
-				case '0':
-				default:
-					LED_PORT ^= 1<<LEDG;
-					break;
+		if(uart_linebuf[0] == '2'){
+			if(uart_linebuf[2] == '0'){
+				write_lcd_string("Heartbeat");
+			} else if(uart_linebuf[2] == '1'){
+				write_lcd_string("Meddelande");
+				clear_line(2);
+				set_cursor_pos(32);
+				write_lcd_string(uart_linebuf + 4);
+			} else if(uart_linebuf[2] == '2'){
+				write_lcd_string("Honk");
+				Summer_PlayMelody(MELODY_HONK);	
+			} else{
+				write_lcd_string("Wtf");
 			}
-		} else if(uart_linebuf[2] == 'p') Summer_PlayMelody(uart_linebuf[4]-48);
+		} else if(uart_linebuf[0] == '1'){
+			
+		}
 		//Done something
 		uart_bufind = 0;
 	} else{
@@ -103,16 +105,11 @@ void btn_init(){
 
 //Extra
 ISR(INT0_vect){
-	Summer_PlayMelody(MELODY_HONK);
 }
 
 //Honk
 ISR(INT1_vect){
-	if(BTN_PIN & 1<<DEADMANBTN){
-		uart_send_line("2 2 h");
-	} else{
-		uart_send_line("0 m");
-	}
+	uart_send_line("3 2");
 }
 
 void led_init(){

@@ -56,9 +56,8 @@ try:
         if len(split_line) < 2:
             print(f"Incorrectly formatted line: {line}")
             continue
-        topic_index = split_line[0]
         try:
-            out_topic = topics[int(topic_index)]
+            out_topic = topics[int(split_line[0])]
         except:
             print(f"Invalid topic identifier in line: {line}")
             continue
