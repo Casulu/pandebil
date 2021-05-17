@@ -4,6 +4,8 @@
 
 main.c
 
+uart.c
+
 util\adc.c
 
 util\lcd.c
@@ -11,6 +13,4 @@ util\lcd.c
 util\spi.c
 
 util\summer.c
-
-util\uart.c
 

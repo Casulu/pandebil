@@ -147,6 +147,9 @@
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="uart.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="util\adc.c">
       <SubType>compile</SubType>
     </Compile>
@@ -169,9 +172,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="util\summer.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="util\uart.c">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>
