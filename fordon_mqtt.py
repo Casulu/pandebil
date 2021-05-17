@@ -1,8 +1,8 @@
 import serial
 import paho.mqtt.client as mqtt
 
-serialport = 'COM14'    # Niclas får ändra
-baudrate = 500000
+serialport = 'COM4'    # Niclas får ändra
+baudrate = 9600
 broker = "tfe.iotwan.se"
 brokerport = 1883
 subscribe_topics = ["pandebil/to_car"]
@@ -56,7 +56,7 @@ try:
         if len(split_line) < 2:
             print(f"Incorrectly formatted line: {line}")
             continue
-        if split_line[0] != 0:
+        if split_line[0] != '1':
             print(f"Invalid topic identifier in line: {line}")
             continue
         print("publishing \"{}\"".format(line))
