@@ -7,6 +7,7 @@
 
 #include <avr/io.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <string.h>
@@ -15,7 +16,6 @@
 #include "util/spi.h"
 #include "util/adc.h"
 #include "util/summer.h"
-
 
 #define BTN_DDR DDRD
 #define BTN_PORT PORTD
@@ -28,21 +28,50 @@
 #define LEDG 5
 #define LEDR1 6
 #define LEDR2 7
+#define MAX_MSG_LEN 16
+#define FRONT_POS 6
+#define BACK_POS 21
+#define CL_POS 30
+#define CR_POS 31
+#define PIR_POS 15
 
 void timer_init();
 void clear_heart();
 void btn_init();
 void led_init();
 void display_next_message();
-void display_message(char* message, bool urgent);
+void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args);
+void display_message(char* msg, bool urgent);
 void display_sensors(char* args);
+void print_lcd_static();
+void force_message(char* msg);
+int uart_put_char(char c, FILE* stream);
+int lcd_put_char(char c, FILE* stream);
 
 
+static FILE uartstdout = FDEV_SETUP_STREAM(uart_put_char, NULL, 0);
+static FILE lcdstdout = FDEV_SETUP_STREAM(lcd_put_char, NULL, 0);
 volatile uint8_t uart_linebuf[40];
 volatile uint8_t uart_bufind = 0;
+volatile uint8_t heart_hundreths = 0;
+volatile uint8_t heart_seconds = 0;
+volatile uint8_t message_hundreths = 0;
+volatile uint8_t message_seconds = 0;
+volatile char message_buf[5][MAX_MSG_LEN];
+volatile uint8_t message_buf_ind = 0;
+volatile uint8_t message_disp_ind = 0;
+volatile uint8_t message_counter = 0;
+volatile bool message_displaying = false;
+volatile char sensor_buf[16];
+volatile bool sensors_received = false;
+
 
 int main(void)
 {
+	int16_t last_x = 0;
+	int16_t last_y = 0;
+	char itoabuf[15] = "03";
+	
 	spi_init();
 	_delay_ms(100);
 	lcd_init();
@@ -53,22 +82,68 @@ int main(void)
 	btn_init();
 	Summer_Init();
 	timer_init();
+	print_lcd_static();
+	stdout = &uartstdout;
 	sei();
-    /* Replace with your application code */
+  
     while (1) 
     {
-		if(!(BTN_PIN & 1<<DEADMANBTN)){
-			
+		if(!message_displaying) display_next_message();
+		if(sensors_received){
+			 display_sensors((char*)sensor_buf);
+			 sensors_received = false;
 		}
-		_delay_ms(10);
+		if(!(BTN_PIN & 1<<DEADMANBTN)){
+			if(!(LED_PORT & (1<<LEDG))){
+				uart_send_line("041");
+				LED_PORT |= 1<<LEDG;
+			}
+			int16_t adjusted_x = 511 - read_avg_adc(1, 25);
+			int16_t adjusted_y = 507 - read_avg_adc(2, 25); 
+			if(adjusted_x > 127){
+				adjusted_x = 127;
+			}
+			else if(adjusted_x < -127) adjusted_x = -127;
+			if(adjusted_y > 127) {
+				adjusted_y = 127;
+			}
+			else if(adjusted_y < -127) adjusted_y = -127;
+			if(adjusted_x != last_x || adjusted_y != last_y){
+				itoa(adjusted_x-adjusted_y, itoabuf+2, 10);
+				uint8_t len = strlen(itoabuf);
+				itoabuf[len++] = ' ';
+				itoabuf[len] = '\0';
+				itoa(adjusted_x+adjusted_y, itoabuf+len, 10);
+				uart_send_line(itoabuf);
+			}
+			last_x = adjusted_x;
+			last_y = adjusted_y;
+		} else{
+			if(LED_PORT & (1<<LEDG)){
+				uart_send_line("040");
+				LED_PORT &= ~(1<<LEDG);
+			}
+		}
+		_delay_ms(100);
     }
 }
 
-volatile uint8_t heart_hundreths = 0;
-volatile uint8_t heart_seconds = 0;
-volatile uint8_t message_hundreths = 0;
-volatile uint8_t message_seconds = 0;
-volatile bool message_displaying = false;
+int uart_put_char(char c, FILE* stream){
+	uart_send_byte(c);
+	return 0;
+}
+
+int lcd_put_char(char c, FILE* stream){
+	write_lcd_char(c);
+	return 0;
+}
+
+void print_lcd_static(){
+	set_cursor_pos(0);
+	write_lcd_string("Fram:   cm PIR: ");
+	set_cursor_pos(16);
+	write_lcd_string("Bak:   cm  C:   ");
+}
 
 ISR(TIMER2_COMPA_vect){
 	if(++heart_hundreths > 99){
@@ -77,12 +152,12 @@ ISR(TIMER2_COMPA_vect){
 		heart_hundreths = 0;
 	}
 	if(message_displaying && ++message_hundreths > 100){
-		if(message_seconds++ > 1){
+		if(message_seconds++ > 2){
+			message_seconds = 0;
 			message_displaying = false;
-			display_next_message();
+			if(message_counter == 0) clear_line(2);
 		}
 		message_hundreths = 0;
-		
 	}
 }
 
@@ -98,17 +173,18 @@ void clear_heart(){
 	LED_PORT &= ~(1<<LEDR2);
 }
 
-void perform_command(uint8_t topic, uint8_t command, uint8_t* args){
+void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args){
 	switch(topic){
 		case '1': //From car
 			switch(command){
-				case 1:
-					display_message("Nödstopp!", true);
+				case '0':
+					display_message("Stopp!", true);
 					break;
-				case 2:
-					display_sensors(args);
+				case '1':
+					strcpy((char*)sensor_buf, (char*)args);
+					sensors_received = true;
 					break;
-				case 3:
+				case '2':
 					display_message("PONG", false);
 			}
 			break;
@@ -119,7 +195,7 @@ void perform_command(uint8_t topic, uint8_t command, uint8_t* args){
 					clear_heart();
 					break;
 				case '1':
-					display_message(args, false);
+					display_message((char*)args, false);
 					break;
 				case '2':
 					Summer_PlayMelody(MELODY_HONK);
@@ -129,16 +205,55 @@ void perform_command(uint8_t topic, uint8_t command, uint8_t* args){
 	}
 }
 
-void display_message(char* message, bool urgent){
-	
+void force_message(char* msg){
+	cli();
+	message_displaying = true;
+	message_hundreths = 0;
+	message_seconds = 0;
+	clear_line(2);
+	set_cursor_pos(32);
+	write_lcd_string(msg);
+	sei();
+}
+
+void display_message(char* msg, bool urgent){
+	if(urgent){
+		force_message(msg);
+	} else{
+		strcpy((char*)(message_buf)[message_buf_ind++], msg);
+		if(++message_counter > 5) message_counter = 5;
+		if(message_buf_ind > 4) message_buf_ind = 0;
+	}
 }
 
 void display_next_message(){
-	
+	if(message_counter > 0){
+		set_cursor_pos(32);
+		write_lcd_string((char*)(message_buf)[message_disp_ind++]);
+		message_displaying = true;
+		if(message_disp_ind > 4) message_disp_ind = 0;
+		message_counter--;	
+	} else{
+	}
 }
 
 void display_sensors(char* args){
-	
+	uint8_t b = 0;
+	while(args[++b] != ' ');
+	args[b++] = '\0';
+	uint8_t k = b;
+	while(args[++k] != ' ');
+	args[k++] = '\0';
+	set_cursor_pos(FRONT_POS);
+	write_lcd_string(args);
+	set_cursor_pos(BACK_POS);
+	write_lcd_string(args+b);
+	set_cursor_pos(CR_POS);
+	write_lcd_char((args[k] == '0') ? 'X' : ' ');
+	set_cursor_pos(CL_POS);
+	write_lcd_char((args[k+1] == '0') ? 'L' : ' ');
+	set_cursor_pos(PIR_POS);
+	write_lcd_char((args[k+3] == '0') ? 'R' : ' ');
 }
 
 ISR(USART_RX_vect){
@@ -168,9 +283,9 @@ ISR(INT0_vect){
 //Honk
 ISR(INT1_vect){
 	if(!(BTN_PIN & 1<<DEADMANBTN)){
-		
+		uart_send_line("02m");
 	} else{
-		uart_send_line("31 Hej V");
+		uart_send_line("32");
 	}
 }
 

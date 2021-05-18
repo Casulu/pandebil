@@ -11,7 +11,7 @@
 /* Initializes the MCU ADC with 100KHz clock and with ports 0-3 enabled */
 /************************************************************************/
 void adc_init(){
-	DDRC &= ~((1<<1)|(1<<0));					//Enable input on ADC-ports
+	DDRC &= ~((1<<1)|(1<<0)|(1<<2));					//Enable input on ADC-ports
 	ADCSRA = (1<<ADEN)|(1<<ADPS1)|(1<<ADPS2);   //ADC-clock F_CPU/64
 	DIDR0 = (1<<ADC5D)|(1<<ADC4D)|(1<<ADC3D);	//Disable unused ADC-ports			
 	ADCSRB = 0;									//No auto trigger
