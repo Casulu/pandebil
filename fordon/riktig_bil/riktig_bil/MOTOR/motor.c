@@ -29,7 +29,7 @@ void motors_init()
 	EICRA |= (1<<ISC01) | (1<<ISC11);
 }
 
-void motors_set_speed(signed char speed_r, signed char speed_l)
+void motors_set_speed(signed char speed_l, signed char speed_r)
 {
 	if (speed_l == 0)
 	{
@@ -62,6 +62,6 @@ void motors_set_speed(signed char speed_r, signed char speed_l)
 		MOTOR_R_F_PORT &=~ MOTOR_R_FORWARD;
 		MOTOR_R_B_PORT |= MOTOR_R_BACKWARD;
 	}
-	MOTOR_L_SPEED = (abs(speed_r)<<1);
-	MOTOR_R_SPEED = (abs(speed_r)<<1);
+	MOTOR_L_SPEED = (abs(speed_l) * 2);
+	MOTOR_R_SPEED = (abs(speed_r) * 2);
 }

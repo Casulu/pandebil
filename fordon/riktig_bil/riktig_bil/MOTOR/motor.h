@@ -1,16 +1,16 @@
 #ifndef MOTOR_H_
 #define MOTOR_H_
 
-#define MOTOR_L_SPEED OCR0A
+#define MOTOR_L_SPEED OCR0B
 #define MOTOR_R_SPEED OCR0A
-#define MOTOR_L_FORWARD (1<<7)
-#define MOTOR_L_BACKWARD (1<<6)
+#define MOTOR_L_FORWARD (1<<6)
+#define MOTOR_L_BACKWARD (1<<7)
 #define MOTOR_L_F_PORT PORTB
 #define MOTOR_L_B_PORT PORTB
-#define MOTOR_R_FORWARD (1<<7)
-#define MOTOR_R_BACKWARD (1<<0)
-#define MOTOR_R_F_PORT PORTD
-#define MOTOR_R_B_PORT PORTB
+#define MOTOR_R_FORWARD (1<<0)
+#define MOTOR_R_BACKWARD (1<<7)
+#define MOTOR_R_F_PORT PORTB
+#define MOTOR_R_B_PORT PORTD
 #define MOTOR_L_F_DDR DDRB
 #define MOTOR_L_B_DDR DDRB
 #define MOTOR_R_F_DDR DDRB

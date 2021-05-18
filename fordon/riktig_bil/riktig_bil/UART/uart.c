@@ -30,7 +30,7 @@ void uart_flush(){
 }
 
 void uart_init(){
-	UBRR0 = 0;		//0==500000 baud rate.  12==38400 baud rate
+	UBRR0 = 51;		//0==500000 baud rate.  12==38400 baud rate
 	UCSR0B = (1<<RXEN0)|(1<<TXEN0)|(1<<RXCIE0);
 	/* Set frame format: 8data, 1stop bit */
 	UCSR0C = (0<<USBS0)|(3<<UCSZ00);

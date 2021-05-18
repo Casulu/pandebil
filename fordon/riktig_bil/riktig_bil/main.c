@@ -21,9 +21,8 @@
 #define REMOTE_JOY (1<<1)
 
 #define EMERGENCY (1<<0)
-#define NO_DEADMAN (1<<1)
-#define BOTH_DEADMAN (1<<2)
-#define NO_HEARBEAT (1<<3)
+#define DEADMAN_STOP (1<<1)
+#define NO_HEARBEAT (1<<2)
 
 #define CLOSE_TO_WALL_F (1<<0)
 #define CLOSE_TO_WALL_B (1<<1)
@@ -34,20 +33,23 @@
 
 void spi_master_init(void);
 void display_init(void);
+void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args);
+void timer_init();
 
 static FILE mystdout = FDEV_SETUP_STREAM(display_put_char,
 NULL,_FDEV_SETUP_WRITE);
 
-volatile char line_buffer[40];
+volatile uint8_t uart_linebuf[40];
 volatile uint8_t line_ind = 0;
 
 volatile char deadman_switches;
 
+volatile int heartbeat_timer;
+
 /*
  * Bit 0: Emergency break
- * Bit 1: No deadman switches
- * Bit 2: Both deadman switches
- * Bit 3: No hearbeat
+ * Bit 1: Deadman stop
+ * Bit 2: No hearbeat
  */
 volatile char control;
 
@@ -67,26 +69,54 @@ int main(void)
 	motors_init();
 	piezo_init();
 	i2c_init();
+	timer_init();
 	portextender_write(0xff);
 	PORTC |= (1<<PORTC0);
 	DDRC |= (1<<DDC0);
-	for (int i = 0; i < NUM_LEDS; i++)
+	leds[0].b = 0;
+	leds[0].g = 0;
+	leds[0].r = 255;
+	leds[1].b = 0;
+	leds[1].g = 255;
+	leds[1].r = 255;
+	leds[2].b = 0;
+	leds[2].g = 255;
+	leds[2].r = 255;
+	leds[3].b = 0;
+	leds[3].g = 0;
+	leds[3].r = 255;
+	leds[4].b = 0;
+	leds[4].g = 0;
+	leds[4].r = 255;
+	leds[5].b = 0;
+	leds[5].g = 255;
+	leds[5].r = 255;
+	leds[6].b = 0;
+	leds[6].g = 255;
+	leds[6].r = 255;
+	leds[7].b = 0;
+	leds[7].g = 0;
+	leds[7].r = 255;
+	for (int i = 8; i < NUM_LEDS; i++)
 	{
-		leds[i].r = 0;
 		if (i % 2 == 1)
-		{
-			leds[i].b = 255;
-			leds[i].g = 0;
-		}
-		else
 		{
 			leds[i].b = 0;
 			leds[i].g = 255;
+			leds[i].r = 255;
+		}
+		else
+		{
+			leds[i].b = 255;
+			leds[i].g = 0;
+			leds[i].r = 0;
 		}
 	}
 	ws2812_setleds(leds, NUM_LEDS);
 	sei();
-	char msg[17] = "1 1 ";
+	portextender_port_out(YELLOW_LED);
+	portextender_port_out(GREEN_LED);
+	char msg[17] = "11";
 	uint8_t len = 0;
     while (1) 
     {
@@ -96,7 +126,7 @@ int main(void)
 		int distance_back = 20;
 		char portextender_data = portextender_read();
 		
-		itoa(distance_front, msg+4, 10);
+		itoa(distance_front, msg+2, 10);
 		len = strlen(msg);
 		msg[len] = ' ';
 		msg[++len] = '\0';
@@ -111,6 +141,76 @@ int main(void)
 		uart_send_line(msg);
 		_delay_ms(1000);
     }
+}
+
+void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args)
+{
+	switch(command){
+		case '0':
+		//Hearbeat
+		PORTC ^= (1<<PORTC0);
+		heartbeat_timer = 30000;
+		break;
+		case '1':
+		//Textmeddelande
+		display_position_cursor(32);
+		printf("%s", args);
+		break;
+		case '2':
+		//Spela låt / tuta
+		break;
+		case '3':
+		if (args[0] == '\0')
+			return;
+		//Sätt hjulfart
+		uint8_t i = 0;
+		while(args[++i] != ' ');
+		args[i++] = '\0';
+		motors_set_speed(atoi((char*)args), atoi((char*)(args+i)));
+		break;
+		case '4':
+		//Deadman set
+		switch(args[0])
+		{
+			case '0':
+				deadman_switches &=~ REMOTE_AX;
+			break;
+			case '1':
+				deadman_switches |= REMOTE_AX;
+			break;
+			case '2':
+				deadman_switches &=~ REMOTE_JOY;
+			break;
+			case '3':
+				deadman_switches |= REMOTE_JOY;
+			break;
+		}
+		switch(deadman_switches)
+		{
+			case 0:
+			control |= DEADMAN_STOP;
+			break;
+			case 3:
+			control |= DEADMAN_STOP;
+			break;
+			default:
+			control &=~ DEADMAN_STOP;
+			break;
+		}
+		break;
+		case '5':
+		//Nödstopp
+		control |= EMERGENCY;
+		break;
+		case '6':
+		//Kvittera nödstopp
+		control &=~ EMERGENCY;
+		break;
+		case '7':
+		//PING
+		uart_send_line("12"); /*PONG*/
+		break;
+	}
 }
 
 void timer_init()
@@ -133,105 +233,28 @@ ISR(INT1_vect)
 
 ISR(TIMER2_COMPA_vect)
 {
+	if (heartbeat_timer == 0)
+	{
+		control |= NO_HEARBEAT;
+	}
+	else
+	{
+		heartbeat_timer--;
+	}
+	if (heartbeat_timer%100 == 0)
+	{
+		display_clear();
+		printf("%d", (heartbeat_timer / 1000));
+	}
+	song_play();
 }
 
 ISR(USART_RX_vect){
-	line_buffer[line_ind] = UDR0;
-	if(line_buffer[line_ind] == '\n'){
-		line_buffer[line_ind] = '\0';
+	uart_linebuf[line_ind] = UDR0;
+	if(uart_linebuf[line_ind] == '\n'){
+		uart_linebuf[line_ind] = '\0';
 		//Do something
-		
-		if(line_buffer[2] == '0')
-		{
-			//Hearbeat
-		}
-		else if(line_buffer[2] == '1')
-		{
-			//Textmeddelande
-			display_position_cursor(32);
-			int i = 3;
-			while(line_buffer[i] != '\0')
-			{
-				display_char(line_buffer[i]);
-				i++;
-			}
-			for (;i < 15; i++)
-			{
-				display_char(' ');
-			}
-		}
-		else if(line_buffer[2] == '2')
-		{
-			//Spela låt / tuta
-		}
-		else if(line_buffer[2] == '3')
-		{
-			//Sätt hjulfart
-			PORTC ^= (1<<PORTC0);
-			motors_set_speed(line_buffer[4], line_buffer[5]);
-		}
-		else if(line_buffer[2] == '4')
-		{
-			//Deadman set
-			if (line_buffer[4] & (1<<1))
-			{
-				if (line_buffer[4] & (1<<0))
-				{
-					deadman_switches |= REMOTE_AX;
-				}
-				else
-				{
-					deadman_switches &=~ REMOTE_AX;
-				}
-			}
-			else
-			{
-				if (line_buffer[4] & (1<<0))
-				{
-					deadman_switches |= REMOTE_JOY;
-				}
-				else
-				{
-					deadman_switches &=~ REMOTE_JOY;
-				}
-			}
-			if (deadman_switches == 0b00000011)
-			{
-				control |= BOTH_DEADMAN;
-				control &=~ NO_DEADMAN;
-			}
-			else if (deadman_switches == 0b00000000)
-			{
-				control &=~ BOTH_DEADMAN;
-				control |= NO_DEADMAN;
-			}
-			else
-			{
-				control &=~ BOTH_DEADMAN;
-				control &=~ NO_DEADMAN;
-			}
-		}
-		else if(line_buffer[2] == '5')
-		{
-			//Nödstopp
-			control |= EMERGENCY;
-		}
-		else if(line_buffer[2] == '6')
-		{
-			//Kvittera nödstopp
-			control &=~ EMERGENCY; 
-		}
-		else if(line_buffer[2] == '7')
-		{
-			//PING
-			uart_send_line("1 2");
-		}
-		
-		
-		/*if(line_buffer[2] == 'w' || line_buffer[2] == 'W')
-		{
-			motors_set_speed(line_buffer[4], line_buffer[5], ((line_buffer[6] & 0b00010000)>>4), (line_buffer[6] & 0b00000001));
-		}*/
+		perform_command(uart_linebuf[0], uart_linebuf[1], uart_linebuf+2);
 		line_ind = 0;
 		} else{
 		line_ind++;

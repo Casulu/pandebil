@@ -52,11 +52,7 @@ try:
             continue
 
         
-        split_line = line.split(' ', 1)
-        if len(split_line) < 2:
-            print(f"Incorrectly formatted line: {line}")
-            continue
-        if split_line[0] != '1':
+        if line[0] != '1':
             print(f"Invalid topic identifier in line: {line}")
             continue
         print("publishing \"{}\"".format(line))
