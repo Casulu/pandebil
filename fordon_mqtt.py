@@ -1,7 +1,7 @@
 import serial
 import paho.mqtt.client as mqtt
 
-serialport = 'COM4'    # Niclas får ändra
+serialport = 'COM4'    # Niklas får ändra
 baudrate = 9600
 broker = "tfe.iotwan.se"
 brokerport = 1883
