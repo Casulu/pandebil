@@ -146,7 +146,7 @@ ISR(USART_RX_vect){
 	if(uart_linebuf[uart_bufind] == '\n'){
 		uart_linebuf[uart_bufind] = '\0';
 		//Do something
-		perform_command(uart_linebuf[0], uart_linebuf[1], uart_linebuf+3);
+		perform_command(uart_linebuf[0], uart_linebuf[1], uart_linebuf+2);
 		//Done something
 		uart_bufind = 0;
 	} else{
