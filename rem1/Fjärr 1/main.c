@@ -41,8 +41,8 @@ void btn_init();
 void led_init();
 void display_next_message();
 void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args);
-void display_message(char* msg, bool urgent);
-void display_sensors(char* args);
+void queue_message(char* msg, bool urgent);
+void display_sensors();
 void print_lcd_static();
 void force_message(char* msg);
 int uart_put_char(char c, FILE* stream);
@@ -54,7 +54,6 @@ static FILE lcdstdout = FDEV_SETUP_STREAM(lcd_put_char, NULL, 0);
 volatile uint8_t uart_linebuf[40];
 volatile uint8_t uart_bufind = 0;
 volatile uint8_t heart_hundreths = 0;
-volatile uint8_t heart_seconds = 0;
 volatile uint8_t message_hundreths = 0;
 volatile uint8_t message_seconds = 0;
 volatile char message_buf[5][MAX_MSG_LEN];
@@ -90,7 +89,7 @@ int main(void)
     {
 		if(!message_displaying) display_next_message();
 		if(sensors_received){
-			 display_sensors((char*)sensor_buf);
+			 display_sensors();
 			 sensors_received = false;
 		}
 		if(!(BTN_PIN & 1<<DEADMANBTN)){
@@ -140,22 +139,21 @@ int lcd_put_char(char c, FILE* stream){
 
 void print_lcd_static(){
 	set_cursor_pos(0);
-	write_lcd_string("Fram:   cm PIR: ");
+	write_lcd_string("Fram: __cm PIR:_");
 	set_cursor_pos(16);
-	write_lcd_string("Bak:   cm  C:   ");
+	write_lcd_string("Bak: __cm  C: __");
 }
 
 ISR(TIMER2_COMPA_vect){
-	if(++heart_hundreths > 99){
+	if(++heart_hundreths > 50){
 		LED_PORT |= 1<<LEDR2;
-		heart_seconds++;
 		heart_hundreths = 0;
 	}
 	if(message_displaying && ++message_hundreths > 100){
-		if(message_seconds++ > 2){
+		if(++message_seconds > 5){
 			message_seconds = 0;
 			message_displaying = false;
-			if(message_counter == 0) clear_line(2);
+			clear_line(2);
 		}
 		message_hundreths = 0;
 	}
@@ -165,7 +163,7 @@ void timer_init(){
 	/* Start 100Hz system timer with TC2 for counting time */
 	OCR2A = 77;
 	TCCR2A = 1<<WGM21;
-	TCCR2B = 0;
+	TCCR2B = 7;
 	TIMSK2 = 1<<OCIE2A;
 }
 
@@ -178,24 +176,23 @@ void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args){
 		case '1': //From car
 			switch(command){
 				case '0':
-					display_message("Stopp!", true);
+					queue_message("Stopp!", true);
 					break;
 				case '1':
 					strcpy((char*)sensor_buf, (char*)args);
 					sensors_received = true;
 					break;
 				case '2':
-					display_message("PONG", false);
+					queue_message("PONG", false);
 			}
 			break;
 		case '2': //To remote
 			switch(command){
 				case '0':
-					TCCR2B = 7;
 					clear_heart();
 					break;
 				case '1':
-					display_message((char*)args, false);
+					queue_message((char*)args, false);
 					break;
 				case '2':
 					Summer_PlayMelody(MELODY_HONK);
@@ -216,10 +213,16 @@ void force_message(char* msg){
 	sei();
 }
 
-void display_message(char* msg, bool urgent){
+void queue_message(char* msg, bool urgent){
 	if(urgent){
 		force_message(msg);
 	} else{
+		/*if(message_counter == 5){
+			force_message((char*)(message_buf)[message_disp_ind++]);
+			if(message_disp_ind > 4) message_disp_ind = 0;
+			message_counter--;
+			message_buf_ind++;
+		}*/
 		strcpy((char*)(message_buf)[message_buf_ind++], msg);
 		if(++message_counter > 5) message_counter = 5;
 		if(message_buf_ind > 4) message_buf_ind = 0;
@@ -233,11 +236,11 @@ void display_next_message(){
 		message_displaying = true;
 		if(message_disp_ind > 4) message_disp_ind = 0;
 		message_counter--;	
-	} else{
 	}
 }
 
-void display_sensors(char* args){
+void display_sensors(){
+	char* args = (char*)sensor_buf;
 	uint8_t b = 0;
 	while(args[++b] != ' ');
 	args[b++] = '\0';
@@ -249,11 +252,11 @@ void display_sensors(char* args){
 	set_cursor_pos(BACK_POS);
 	write_lcd_string(args+b);
 	set_cursor_pos(CR_POS);
-	write_lcd_char((args[k] == '0') ? 'X' : ' ');
+	write_lcd_char((args[k] == '0') ? 'R' : '_');
 	set_cursor_pos(CL_POS);
-	write_lcd_char((args[k+1] == '0') ? 'L' : ' ');
+	write_lcd_char((args[k+1] == '0') ? 'L' : '_');
 	set_cursor_pos(PIR_POS);
-	write_lcd_char((args[k+3] == '0') ? 'R' : ' ');
+	write_lcd_char((args[k+3] == '0') ? 'X' : '_');
 }
 
 ISR(USART_RX_vect){
