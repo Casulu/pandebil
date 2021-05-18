@@ -29,10 +29,14 @@
 #define LEDR1 6
 #define LEDR2 7
 
-void timer2_init();
+void timer_init();
 void clear_heart();
 void btn_init();
 void led_init();
+void display_next_message();
+void display_message(char* message, bool urgent);
+void display_sensors(char* args);
+
 
 volatile uint8_t uart_linebuf[40];
 volatile uint8_t uart_bufind = 0;
@@ -48,7 +52,7 @@ int main(void)
 	led_init();
 	btn_init();
 	Summer_Init();
-	timer2_init();
+	timer_init();
 	sei();
     /* Replace with your application code */
     while (1) 
@@ -60,17 +64,30 @@ int main(void)
     }
 }
 
-volatile uint8_t hundreths = 0;
+volatile uint8_t heart_hundreths = 0;
+volatile uint8_t heart_seconds = 0;
+volatile uint8_t message_hundreths = 0;
+volatile uint8_t message_seconds = 0;
+volatile bool message_displaying = false;
 
 ISR(TIMER2_COMPA_vect){
-	if(++hundreths > 100){
+	if(++heart_hundreths > 99){
 		LED_PORT |= 1<<LEDR2;
-		hundreths = 0;
+		heart_seconds++;
+		heart_hundreths = 0;
+	}
+	if(message_displaying && ++message_hundreths > 100){
+		if(message_seconds++ > 1){
+			message_displaying = false;
+			display_next_message();
+		}
+		message_hundreths = 0;
+		
 	}
 }
 
-void timer2_init(){
-	/* Start 100Hz system timer with TC0 */
+void timer_init(){
+	/* Start 100Hz system timer with TC2 for counting time */
 	OCR2A = 77;
 	TCCR2A = 1<<WGM21;
 	TCCR2B = 0;
@@ -88,10 +105,11 @@ void perform_command(uint8_t topic, uint8_t command, uint8_t* args){
 				case 1:
 					display_message("Nödstopp!", true);
 					break;
-				default:
-					clear_line(0);
-					set_cursor_pos(0);
-					write_lcd_string("From car");
+				case 2:
+					display_sensors(args);
+					break;
+				case 3:
+					display_message("PONG", false);
 			}
 			break;
 		case '2': //To remote
@@ -106,20 +124,20 @@ void perform_command(uint8_t topic, uint8_t command, uint8_t* args){
 				case '2':
 					Summer_PlayMelody(MELODY_HONK);
 					break;
-				default:
-					clear_line(0);
-					set_cursor_pos(0);
-					write_lcd_string("Invalid command");
 			}
 			break;
-		default:
-			clear_line(0);
-			set_cursor_pos(0);
-			write_lcd_string("Not for me");
 	}
 }
 
 void display_message(char* message, bool urgent){
+	
+}
+
+void display_next_message(){
+	
+}
+
+void display_sensors(char* args){
 	
 }
 
@@ -128,7 +146,7 @@ ISR(USART_RX_vect){
 	if(uart_linebuf[uart_bufind] == '\n'){
 		uart_linebuf[uart_bufind] = '\0';
 		//Do something
-		perform_command(uart_linebuf[0], uart_linebuf[2], uart_linebuf+4);
+		perform_command(uart_linebuf[0], uart_linebuf[1], uart_linebuf+3);
 		//Done something
 		uart_bufind = 0;
 	} else{
@@ -152,7 +170,7 @@ ISR(INT1_vect){
 	if(!(BTN_PIN & 1<<DEADMANBTN)){
 		
 	} else{
-		uart_send_line("3 1 Hej V");
+		uart_send_line("31 Hej V");
 	}
 }
 
