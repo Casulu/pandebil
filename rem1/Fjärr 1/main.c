@@ -202,6 +202,10 @@ void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args){
 	}
 }
 
+bool button_is_pressed(char* args){
+	return args[strlen(args)-2] == '0';
+}
+
 void display_sensors(){
 	char* args = (char*)sensor_buf;
 	uint8_t b = 0;

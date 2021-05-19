@@ -12,6 +12,15 @@
 const uint8_t initseq[9] PROGMEM = {0x39, 0x15, 0x55, 0x6E, 0x72, 0x38, 0x0C, 0x01, 0x06};
 
 /************************************************************************/
+/* Transmits and receives via SPI										*/
+/* @param pos The position to set to									*/
+/************************************************************************/
+static void spi_tx(uint8_t data){
+	SPDR = data;
+	while(!(SPSR & (1<<SPIF)));
+}
+
+/************************************************************************/
 /* Initiate the LCD-panel with non-blinking incrementing cursor.		*/
 /************************************************************************/
 void lcd_init(){
@@ -100,13 +109,4 @@ void set_cursor_pos(uint8_t pos){
 	PORTB &= ~(1<<CSB);   //Clear CSB
 	spi_tx(pos|0x80);
 	_delay_us(30);
-}
-
-/************************************************************************/
-/* Transmits and receives via SPI										*/
-/* @param pos The position to set to									*/
-/************************************************************************/
-static void spi_tx(uint8_t data){
-	SPDR = data;
-	while(!(SPSR & (1<<SPIF)));
 }
