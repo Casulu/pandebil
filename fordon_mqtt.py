@@ -20,7 +20,7 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe(t)
 
 def on_message(client, userdata, msg):
-    rec = msg.payload.decode()
+    rec = msg.payload.decode('ascii', 'ignore')
     print("recieved message: \"{}\" from topic \"{}\"".format(rec,msg.topic))
     ser.write((rec + "\n").encode())
 

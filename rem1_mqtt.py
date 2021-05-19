@@ -17,7 +17,7 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe(t)
 
 def on_message(client, userdata, msg):
-    rec = msg.payload.decode()
+    rec = msg.payload.decode('ascii', 'ignore')
     print("recieved message: \"{}\" from topic \"{}\"".format(rec,msg.topic))
     ser.write((rec + "\n").encode())
 
@@ -26,7 +26,8 @@ try:
     ser = serial.Serial(serialport, baudrate)
     print("Connected")
 except:
-    print("Failed to connect to serial")
+    print("Failed to connect to serial. Trying again")
+    
     raise SystemExit
 
 try:
