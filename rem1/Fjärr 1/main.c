@@ -35,39 +35,40 @@
 #define CR_POS 31
 #define PIR_POS 15
 #define CMD_DELAY 20
+#define DEBOUNCE_VAL 20
 
 #define SETBIT(x, y) ((x) |= (1<<(y)))		//Sets bit y on port x
 #define CLEARBIT(x, y) ((x) &= ~(1<<(y)))	//Clears bit y on port x
 
 void timer_init();
-void clear_heart();
 void btn_init();
 void led_init();
 void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args);
 void display_sensors();
 void print_lcd_static();
+void send_move_command();
 int uart_put_char(char c, FILE* stream);
 int lcd_put_char(char c, FILE* stream);
 
 
 static FILE uartstdout = FDEV_SETUP_STREAM(uart_put_char, NULL, 0);
-static FILE lcdstdout = FDEV_SETUP_STREAM(lcd_put_char, NULL, 0);
+//static FILE lcdstdout = FDEV_SETUP_STREAM(lcd_put_char, NULL, 0);
 volatile uint8_t uart_linebuf[20];
 volatile uint8_t uart_bufind = 0;
 volatile uint8_t heart_hundreths = 0;
 volatile uint8_t command_hundreths = 0;
+volatile uint8_t debounce_hundreths = 0;
 volatile char sensor_buf[16];
 volatile bool sensors_received = false;
 volatile uint16_t x_rest = 511;
 volatile uint16_t y_rest = 507; 
+int16_t last_left = 0;
+int16_t last_right = 0;
+char itoabuf[15] = "03";
 
 
 int main(void)
 {
-	int16_t last_left = 0;
-	int16_t last_right = 0;
-	char itoabuf[15] = "03";
-	
 	spi_init();
 	_delay_ms(100);
 	lcd_init();
@@ -84,7 +85,13 @@ int main(void)
   
     while (1) 
     {
-		if(!message_is_displaying()) display_next_message();
+		messages_move_queue();
+		if(!output_buf_read){
+			set_cursor_pos(32);
+			char* buffer = (char*)messages_get_buffer();
+			write_lcd_string((buffer[0] == '\0') ? "                " : buffer);
+		}
+		
 		if(sensors_received){
 			 display_sensors();
 			 sensors_received = false;
@@ -94,36 +101,7 @@ int main(void)
 				uart_send_line("041");
 				LED_PORT |= 1<<LEDG;
 			}
-			if(command_hundreths == CMD_DELAY){
-				command_hundreths = 0;
-				int16_t adjusted_x = x_rest - read_avg_adc(1, 25);
-				int16_t adjusted_y = y_rest - read_avg_adc(2, 25);
-				int16_t left = adjusted_x-adjusted_y;
-				int16_t right = adjusted_x+adjusted_y;
-				if(left > 127){
-					left = 127;
-				}
-				else if(left < -127){
-					left = -127;
-				} else if(left > -10 && left < 10) left = 0;
-				
-				if(right > 127) {
-					right = 127;
-				}
-				else if(right < -127){
-					right = -127;
-				} else if(right > -10 && right < 10) right = 0;
-				
-				if(left != last_left || right != last_right){
-					itoa(left, itoabuf+2, 10);
-					uint8_t len = strlen(itoabuf);
-					itoabuf[len++] = ' ';
-					itoa(right, itoabuf+len, 10);
-					uart_send_line(itoabuf);
-				}
-				last_left = left;
-				last_right = right;
-			}
+			send_move_command();
 		} else{
 			if(LED_PORT & (1<<LEDG)){
 				uart_send_line("040");
@@ -134,13 +112,41 @@ int main(void)
     }
 }
 
-int uart_put_char(char c, FILE* stream){
-	uart_send_byte(c);
-	return 0;
+void send_move_command(){
+	if(command_hundreths == CMD_DELAY){
+		command_hundreths = 0;
+		int16_t adjusted_x = x_rest - read_avg_adc(1, 25);
+		int16_t adjusted_y = y_rest - read_avg_adc(2, 25);
+		int16_t left = adjusted_x+adjusted_y;
+		int16_t right = adjusted_x-adjusted_y;
+		if(left > 127){
+			left = 127;
+		}
+		else if(left < -127){
+			left = -127;
+		} else if(left > -5 && left < 5) left = 0;
+		
+		if(right > 127) {
+			right = 127;
+		}
+		else if(right < -127){
+			right = -127;
+		} else if(right > -5 && right < 5) right = 0;
+		
+		if(left != last_left || right != last_right){
+			itoa(left, itoabuf+2, 10);
+			uint8_t len = strlen(itoabuf);
+			itoabuf[len++] = ' ';
+			itoa(right, itoabuf+len, 10);
+			uart_send_line(itoabuf);
+		}
+		last_left = left;
+		last_right = right;
+	}
 }
 
-int lcd_put_char(char c, FILE* stream){
-	write_lcd_char(c);
+int uart_put_char(char c, FILE* stream){
+	uart_send_byte(c);
 	return 0;
 }
 
@@ -159,6 +165,7 @@ ISR(TIMER2_COMPA_vect){
 	if(command_hundreths < CMD_DELAY){
 		command_hundreths++;
 	}
+	if(debounce_hundreths > 0) debounce_hundreths--;
 	messages_timerproc();
 }
 
@@ -170,32 +177,28 @@ void timer_init(){
 	TIMSK2 = 1<<OCIE2A;
 }
 
-void clear_heart(){
-	LED_PORT &= ~(1<<LEDR2);
-}
-
 void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args){
 	switch(topic){
 		case '1': //From car
 			switch(command){
 				case '0':
-					force_message("Stopp!");
+					messages_force("Stopp!          ");
 					break;
 				case '1':
 					strcpy((char*)sensor_buf, (char*)args);
 					sensors_received = true;
 					break;
 				case '2':
-					queue_message("PONG");
+					messages_queue("PONG            ");
 			}
 			break;
 		case '2': //To remote
 			switch(command){
 				case '0':
-					clear_heart();
+					LED_PORT &= ~(1<<LEDR2);
 					break;
 				case '1':
-					queue_message((char*)args);
+					messages_queue((char*)args);
 					break;
 				case '2':
 					Summer_PlayMelody(args[0]-'0');
@@ -279,10 +282,13 @@ ISR(INT0_vect){
 
 //Honk
 ISR(INT1_vect){
-	if(!(BTN_PIN & 1<<DEADMANBTN)){
-		uart_send_line("020");
-	} else{
-		uart_send_line("32");
+	if(debounce_hundreths == 0){
+		if(!(BTN_PIN & 1<<DEADMANBTN)){
+			uart_send_line("020");
+			} else{
+			uart_send_line("32");
+		}
+		debounce_hundreths = DEBOUNCE_VAL;	
 	}
 }
 

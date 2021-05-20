@@ -10,3 +10,4 @@ void lcd_init();											/*Initiates the LCD with 3 rows and invisible increme
 void clear_LCD();											/*Clears the LCD*/
 void clear_line(uint8_t linenum);							/*Clears the given line on the LCD*/
 void set_cursor_pos(uint8_t pos);							/*Sets the position of the LCD cursor*/
+uint8_t get_cursor_pos();

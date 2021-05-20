@@ -9,7 +9,8 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 
-const uint8_t initseq[9] PROGMEM = {0x39, 0x15, 0x55, 0x6E, 0x72, 0x38, 0x0C, 0x01, 0x06};
+static uint8_t cursor_pos;
+static const uint8_t initseq[9] PROGMEM = {0x39, 0x15, 0x55, 0x6E, 0x72, 0x38, 0x0C, 0x01, 0x06};
 
 /************************************************************************/
 /* Transmits and receives via SPI										*/
@@ -30,6 +31,7 @@ void lcd_init(){
 		spi_tx(pgm_read_byte(&(initseq[i])));
 		_delay_ms(1.5);
 	}
+	cursor_pos = 0;
 }
 
 /************************************************************************/
@@ -42,6 +44,7 @@ void write_lcd_char(uint8_t char_code){
 	spi_tx(char_code);
 	_delay_us(30);
 	PORTB &= ~(1<<RS);
+	cursor_pos++;
 }
 
 /************************************************************************/
@@ -57,6 +60,7 @@ void write_lcd_string(char* string){
 	while((charbuf = (uint8_t)string[i++]) != '\0'){
 		spi_tx(charbuf);
 		_delay_us(30);
+		cursor_pos++;
 	}
 	PORTB &= ~(1<<RS);
 }
@@ -73,6 +77,7 @@ void write_lcd_progmem_string(const char* progmem_string){
 	while((charbuf = pgm_read_byte(&(progmem_string[i++]))) != '\0'){
 		spi_tx(charbuf);
 		_delay_us(30);
+		cursor_pos++;
 	}
 	PORTB &= ~(1<<RS);
 }
@@ -84,6 +89,7 @@ void clear_LCD(){
 	PORTB &= ~(1<<CSB);   //Clear CSB
 	spi_tx(0x01);
 	_delay_ms(1.5);
+	cursor_pos = 0;
 }
 
 /************************************************************************/
@@ -97,6 +103,7 @@ void clear_line(uint8_t linenum){
 	for (uint8_t i = 0; i < 16; i++){
 		spi_tx(' ');
 		_delay_us(30);
+		cursor_pos++;
 	}
 	PORTB &= ~(1<<RS);
 }
@@ -109,4 +116,9 @@ void set_cursor_pos(uint8_t pos){
 	PORTB &= ~(1<<CSB);   //Clear CSB
 	spi_tx(pos|0x80);
 	_delay_us(30);
+	cursor_pos = pos;
+}
+
+uint8_t get_cursor_pos(){
+	return cursor_pos;
 }
