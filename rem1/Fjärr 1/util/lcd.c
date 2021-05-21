@@ -5,12 +5,21 @@
  *  Author: Rasmus Lyxell
  */ 
 #include "lcd.h"
-#include "spi.h"
 #include <util/delay.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 
-const uint8_t initseq[9] PROGMEM = {0x39, 0x15, 0x55, 0x6E, 0x72, 0x38, 0x0C, 0x01, 0x06};
+static uint8_t cursor_pos;
+static const uint8_t initseq[9] PROGMEM = {0x39, 0x15, 0x55, 0x6E, 0x72, 0x38, 0x0C, 0x01, 0x06};
+
+/************************************************************************/
+/* Transmits and receives via SPI										*/
+/* @param pos The position to set to									*/
+/************************************************************************/
+static void spi_tx(uint8_t data){
+	SPDR = data;
+	while(!(SPSR & (1<<SPIF)));
+}
 
 /************************************************************************/
 /* Initiate the LCD-panel with non-blinking incrementing cursor.		*/
@@ -19,9 +28,10 @@ void lcd_init(){
 	DDRB |= (1<<RS) | (1<<CSB);		//Set pins for RS and CSB to out
 	PORTB &= ~((1<<RS) | (1<<CSB));	//Set RS and CSB low for writing commands
 	for(int i = 0; i < 9; i++){
-		spi_txrx(pgm_read_byte(&(initseq[i])));
+		spi_tx(pgm_read_byte(&(initseq[i])));
 		_delay_ms(1.5);
 	}
+	cursor_pos = 0;
 }
 
 /************************************************************************/
@@ -31,9 +41,10 @@ void lcd_init(){
 void write_lcd_char(uint8_t char_code){
 	PORTB |= 1<<RS;
 	PORTB &= ~(1<<CSB);   //Clear CSB
-	spi_txrx(char_code);
+	spi_tx(char_code);
 	_delay_us(30);
 	PORTB &= ~(1<<RS);
+	cursor_pos++;
 }
 
 /************************************************************************/
@@ -47,8 +58,9 @@ void write_lcd_string(char* string){
 	uint8_t i = 0;
 	uint8_t charbuf;
 	while((charbuf = (uint8_t)string[i++]) != '\0'){
-		spi_txrx(charbuf);
+		spi_tx(charbuf);
 		_delay_us(30);
+		cursor_pos++;
 	}
 	PORTB &= ~(1<<RS);
 }
@@ -63,8 +75,9 @@ void write_lcd_progmem_string(const char* progmem_string){
 	uint8_t i = 0;
 	uint8_t charbuf;
 	while((charbuf = pgm_read_byte(&(progmem_string[i++]))) != '\0'){
-		spi_txrx(charbuf);
+		spi_tx(charbuf);
 		_delay_us(30);
+		cursor_pos++;
 	}
 	PORTB &= ~(1<<RS);
 }
@@ -74,8 +87,9 @@ void write_lcd_progmem_string(const char* progmem_string){
 /************************************************************************/
 void clear_LCD(){
 	PORTB &= ~(1<<CSB);   //Clear CSB
-	spi_txrx(0x01);
+	spi_tx(0x01);
 	_delay_ms(1.5);
+	cursor_pos = 0;
 }
 
 /************************************************************************/
@@ -87,8 +101,9 @@ void clear_line(uint8_t linenum){
 	PORTB |= 1<<RS;
 	PORTB &= ~(1<<CSB);
 	for (uint8_t i = 0; i < 16; i++){
-		spi_txrx(' ');
+		spi_tx(' ');
 		_delay_us(30);
+		cursor_pos++;
 	}
 	PORTB &= ~(1<<RS);
 }
@@ -99,6 +114,11 @@ void clear_line(uint8_t linenum){
 /************************************************************************/
 void set_cursor_pos(uint8_t pos){
 	PORTB &= ~(1<<CSB);   //Clear CSB
-	spi_txrx(pos|0x80);
+	spi_tx(pos|0x80);
 	_delay_us(30);
+	cursor_pos = pos;
+}
+
+uint8_t get_cursor_pos(){
+	return cursor_pos;
 }
