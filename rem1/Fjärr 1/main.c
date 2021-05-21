@@ -11,6 +11,7 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <string.h>
+#include <avr/pgmspace.h>
 #include "uart.h"
 #include "util/lcd.h"
 #include "util/spi.h"
@@ -37,22 +38,26 @@
 #define CMD_DELAY 20
 #define DEBOUNCE_VAL 20
 
+#define MAIN_MODE 0
+#define FIR_MODE 1
+
 #define SETBIT(x, y) ((x) |= (1<<(y)))		//Sets bit y on port x
 #define CLEARBIT(x, y) ((x) &= ~(1<<(y)))	//Clears bit y on port x
+#define CHANGEBIT(x, y, z) {\
+				if(z){\
+					SETBIT(x, y);\
+				} else CLEARBIT(x, y);\
+			}
 
 void timer_init();
 void btn_init();
 void led_init();
+void do_normal_program();
 void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args);
 void display_sensors();
 void print_lcd_static();
 void send_move_command();
-int uart_put_char(char c, FILE* stream);
-int lcd_put_char(char c, FILE* stream);
 
-
-static FILE uartstdout = FDEV_SETUP_STREAM(uart_put_char, NULL, 0);
-//static FILE lcdstdout = FDEV_SETUP_STREAM(lcd_put_char, NULL, 0);
 volatile uint8_t uart_linebuf[20];
 volatile uint8_t uart_bufind = 0;
 volatile uint8_t heart_hundreths = 0;
@@ -60,6 +65,7 @@ volatile uint8_t command_hundreths = 0;
 volatile uint8_t debounce_hundreths = 0;
 volatile char sensor_buf[16];
 volatile bool sensors_received = false;
+volatile uint8_t program_mode = MAIN_MODE;
 volatile uint16_t x_rest = 511;
 volatile uint16_t y_rest = 507; 
 int16_t last_left = 0;
@@ -80,36 +86,50 @@ int main(void)
 	Summer_Init();
 	timer_init();
 	print_lcd_static();
-	stdout = &uartstdout;
 	sei();
-  
+	
     while (1) 
     {
-		messages_move_queue();
-		if(!output_buf_read){
-			set_cursor_pos(32);
-			char* buffer = (char*)messages_get_buffer();
-			write_lcd_string((buffer[0] == '\0') ? "                " : buffer);
+		switch(program_mode){
+			case MAIN_MODE:
+				do_normal_program();
+				break;
+			case FIR_MODE:
+				do_fir_actions();
+				break;
 		}
-		
-		if(sensors_received){
-			 display_sensors();
-			 sensors_received = false;
+	}
+}
+
+void do_fir_actions(){
+	
+}
+
+void do_normal_program(){
+	messages_move_queue();
+	if(!output_buf_read){
+		set_cursor_pos(32);
+		char* buffer = (char*)messages_get_buffer();
+		/*If buffer is empty, write clear line. Ottherwise write buffer*/
+		write_lcd_string((buffer[0] == '\0') ? "                " : buffer);
+	}
+	if(sensors_received){
+		display_sensors();
+		sensors_received = false;
+	}
+	if(!(BTN_PIN & 1<<DEADMANBTN)){
+		if(!(LED_PORT & (1<<LEDG))){
+			uart_send_line("041");
+			LED_PORT |= 1<<LEDG;
 		}
-		if(!(BTN_PIN & 1<<DEADMANBTN)){
-			if(!(LED_PORT & (1<<LEDG))){
-				uart_send_line("041");
-				LED_PORT |= 1<<LEDG;
-			}
-			send_move_command();
+		send_move_command();
 		} else{
-			if(LED_PORT & (1<<LEDG)){
-				uart_send_line("040");
-				LED_PORT &= ~(1<<LEDG);
-			}
+		if(LED_PORT & (1<<LEDG)){
+			uart_send_line("040");
+			LED_PORT &= ~(1<<LEDG);
 		}
-		_delay_ms(100);
-    }
+	}
+	_delay_ms(50);
 }
 
 void send_move_command(){
@@ -119,6 +139,7 @@ void send_move_command(){
 		int16_t adjusted_y = y_rest - read_avg_adc(2, 25);
 		int16_t left = adjusted_x+adjusted_y;
 		int16_t right = adjusted_x-adjusted_y;
+		/*Keep values within bounds*/
 		if(left > 127){
 			left = 127;
 		}
@@ -133,21 +154,19 @@ void send_move_command(){
 			right = -127;
 		} else if(right > -5 && right < 5) right = 0;
 		
+		/*Ignore duplicate values*/
 		if(left != last_left || right != last_right){
+			/*Build output string*/
 			itoa(left, itoabuf+2, 10);
 			uint8_t len = strlen(itoabuf);
 			itoabuf[len++] = ' ';
 			itoa(right, itoabuf+len, 10);
+			/*Send string*/
 			uart_send_line(itoabuf);
 		}
 		last_left = left;
 		last_right = right;
 	}
-}
-
-int uart_put_char(char c, FILE* stream){
-	uart_send_byte(c);
-	return 0;
 }
 
 void print_lcd_static(){
@@ -203,6 +222,16 @@ void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args){
 				case '2':
 					Summer_PlayMelody(args[0]-'0');
 					break;
+				case '3':
+					if(program_mode == FIR_MODE){
+						
+					} else{
+						if(args[0] < '0') program_mode = FIR_MODE;	
+					}
+					break;
+				case '4':
+					CHANGEBIT(LED_PORT, LEDR1, args[0]-'0');
+					break;
 			}
 			break;
 	}
@@ -218,12 +247,8 @@ void display_sensors(){
 	set_cursor_pos(PIR_POS);
 	write_lcd_char((args[3] == '0') ? 'X' : '_');
 	if(args[2] == '0'){
-		if(!(LED_PORT & 1<<LEDR1)){
-			Summer_PlayMelody(MELODY_HONK);
-			LED_PORT |= 1<<LEDR1;
-		}
-		} else{
-		LED_PORT &= ~(1<<LEDR1);
+		Summer_PlayMelody(MELODY_HONK);
+		
 	}
 	
 	

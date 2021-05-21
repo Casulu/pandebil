@@ -11,3 +11,5 @@ void clear_LCD();											/*Clears the LCD*/
 void clear_line(uint8_t linenum);							/*Clears the given line on the LCD*/
 void set_cursor_pos(uint8_t pos);							/*Sets the position of the LCD cursor*/
 uint8_t get_cursor_pos();
+void set_character(uint8_t adress, uint8_t rows[8]);
+void set_character_pgm(uint8_t adress, const uint8_t rows[8]);

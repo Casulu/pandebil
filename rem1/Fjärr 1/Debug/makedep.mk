@@ -12,8 +12,6 @@ util\lcd.c
 
 util\messages.c
 
-util\play_field.c
-
 util\spi.c
 
 util\summer.c

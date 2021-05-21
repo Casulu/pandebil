@@ -32,6 +32,7 @@ void lcd_init(){
 		_delay_ms(1.5);
 	}
 	cursor_pos = 0;
+	PORTB |= 1<<CSB;
 }
 
 /************************************************************************/
@@ -44,6 +45,7 @@ void write_lcd_char(uint8_t char_code){
 	spi_tx(char_code);
 	_delay_us(30);
 	PORTB &= ~(1<<RS);
+	PORTB |= 1<<CSB;
 	cursor_pos++;
 }
 
@@ -55,14 +57,14 @@ void write_lcd_char(uint8_t char_code){
 void write_lcd_string(char* string){
 	PORTB |= 1<<RS;
 	PORTB &= ~(1<<CSB);   //Clear CSB
-	uint8_t i = 0;
 	uint8_t charbuf;
-	while((charbuf = (uint8_t)string[i++]) != '\0'){
+	while((charbuf = (uint8_t)*(string++)) != '\0'){
 		spi_tx(charbuf);
 		_delay_us(30);
 		cursor_pos++;
 	}
 	PORTB &= ~(1<<RS);
+	PORTB |= 1<<CSB;
 }
 
 /************************************************************************/
@@ -80,6 +82,7 @@ void write_lcd_progmem_string(const char* progmem_string){
 		cursor_pos++;
 	}
 	PORTB &= ~(1<<RS);
+	PORTB |= 1<<CSB;
 }
 
 /************************************************************************/
@@ -106,6 +109,7 @@ void clear_line(uint8_t linenum){
 		cursor_pos++;
 	}
 	PORTB &= ~(1<<RS);
+	PORTB |= 1<<CSB;
 }
 
 /************************************************************************/
@@ -119,6 +123,49 @@ void set_cursor_pos(uint8_t pos){
 	cursor_pos = pos;
 }
 
+/************************************************************************/
+/* Get the LCD cursors position.										*/
+/* @return The position of the cursor									*/
+/************************************************************************/
 uint8_t get_cursor_pos(){
 	return cursor_pos;
+}
+
+void set_character(uint8_t char_code, uint8_t rows[8]){
+	PORTB &= ~(1<<CSB);   //Clear CSB
+	for (uint8_t i = 0; i < 8; i++){
+		//Set CGRAM address
+		PORTB &= ~(1<<RS);
+		spi_tx(0x40|(char_code<<3)|(i));
+		_delay_us(30);
+		//Write row to character	
+		PORTB |= 1<<RS;
+		spi_tx(rows[i]);
+		_delay_us(30);
+	}
+	PORTB &= ~(1<<RS);
+	PORTB |= 1<<CSB;
+}
+
+void set_character_pgm(uint8_t char_code, const uint8_t rows[8]){
+	PORTB &= ~(1<<CSB);   //Clear CSB
+	for (uint8_t i = 0; i < 8; i++){
+		//Set CGRAM address
+		PORTB &= ~(1<<RS);
+		spi_tx(0x40|(char_code<<3)|(i));
+		_delay_us(30);
+		//Write row to character
+		PORTB |= 1<<RS;
+		spi_tx(pgm_read_byte(&(rows[i])));
+		_delay_us(30);
+	}
+	PORTB &= ~(1<<RS);
+	PORTB |= 1<<CSB;
+}
+
+static void function_set(uint8_t table){
+	PORTB &= ~(1<<CSB);   //Clear CSB
+	spi_tx(0x38|table);
+	_delay_us(30);
+	PORTB |= 1<<CSB;
 }
