@@ -8,10 +8,11 @@
 #include "piezo.h"
 
 typedef struct note note;
+typedef struct song song;
 
-void song_empty(uint8_t number_of_notes, uint8_t bars_per_min);
-void song_add_note(float tone, char octave, char lenght, char number, bool pause);
-void song_start();
+song *song_empty(int bars_per_min);
+void song_add_note(volatile song *s, float tone, char octave, char lenght, char number, bool pause);
+void song_start(volatile song *s);
 void song_stop();
 bool song_playing();
 void song_play();

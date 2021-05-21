@@ -1,7 +1,7 @@
+#include <stdbool.h>
 #include "song.h"
 
 struct note {
-	struct note *next;
 	float tone;
 	char octave;
 	char lenght;
@@ -9,89 +9,91 @@ struct note {
 	bool pause;
 };
 
-struct song {
-	struct note *start;
-	struct note *current_note;
-	struct note *end_note;
-	int pace_ms;
-	int timer;
-};
+struct note* song;
+float pace_ms;
+uint16_t timer;
+uint8_t nr_notes;
+uint8_t current_note;
+bool playing;
 
-volatile song *current_song = NULL;
-
-song *song_empty(int bars_per_min)
+void song_empty(uint8_t number_of_notes, uint8_t bars_per_min)
 {
-	song *s = calloc(1, sizeof(*s));
+	song = calloc(number_of_notes, sizeof(note));
 	
-	s->pace_ms = 60000/bars_per_min;
+	pace_ms = 60000/bars_per_min;
 	
-	s->timer = 0;
+	timer = 0;
 	
-	s->start = calloc(1, sizeof(struct note));
+	nr_notes = number_of_notes;
 	
-	s->start->next = NULL;
+	current_note = 0;
 	
-	s->end_note = s->start;
-	
-	return s;
+	playing = false;
 }
 
-void song_add_note(volatile song *s, float tone, char octave, char lenght, char number, bool pause)
+void song_add_note(float tone, char octave, char lenght, char number, bool pause)
 {
-	note *n = calloc(1, sizeof(struct note));
-	n->next = NULL;
-	n->tone = tone;
-	n->octave = octave;
-	n->lenght = lenght;
-	n->number = number;
-	n->pause = pause;
-	s->end_note->next = n;
-	s->end_note = n;
-	s->current_note = n;
+	song[current_note].tone = tone;
+	song[current_note].octave = octave;
+	song[current_note].lenght = lenght;
+	song[current_note].number = number;
+	song[current_note].pause = pause;
+	current_note++;
 }
 
-void song_start(volatile song *s)
+void song_start()
 {
-	current_song = s;
-	s->timer = 0;
-	s->current_note = s->start;
+	if (song != NULL)
+	{
+		current_note = 0;
+		playing = true;
+		timer = 0;
+	}
 }
 
 void song_stop()
 {
-	current_song = NULL;
+	playing = false;
+	free(song);
+	song = NULL;
+	piezo_stop();
+}
+
+bool song_playing()
+{
+	return playing;
 }
 
 void song_play()
 {
-	if (current_song != NULL)
+	if (playing)
 	{
-		if (current_song->timer != 0)
+		if (timer != 0)
 		{
-			current_song->timer--;
+			timer--;
 		}
 		
-		if (current_song->current_note->next == NULL && current_song->timer == 0)
+		if (current_note == nr_notes && timer == 0)
 		{
 			piezo_stop();
-			current_song = NULL;
+			song_stop();
 		}
-		else if (current_song->timer == 1)
+		else if (timer == 1)
 		{
 			piezo_stop();
 		}
-		else if (current_song->timer == 0)
+		else if (timer == 0)
 		{
-			current_song->current_note = current_song->current_note->next;
-			if (current_song->current_note->pause == false)
+			if (song[current_note].pause == false)
 			{
-				piezo_play_tone_continous(current_song->current_note->tone, current_song->current_note->octave);
+				piezo_play_tone_continous(song[current_note].tone, song[current_note].octave);
 			}
 			else
 			{
 				piezo_stop();
 			}
-			current_song->timer = current_song->current_note->number * (current_song->pace_ms/current_song->current_note->lenght);
+			timer = song[current_note].number * (pace_ms/song[current_note].lenght);
+			current_note++;
 		}
 	}
 }

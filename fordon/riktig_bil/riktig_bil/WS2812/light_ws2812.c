@@ -17,7 +17,7 @@
 
 // Normally ws2812_sendarray_mask() runs under disabled-interrupt condition,
 // undefine if you want to accept interrupts in that function.
-#define interrupt_is_disabled
+//#define interrupt_is_disabled
  
 // Setleds for standard RGB 
 void inline ws2812_setleds(struct cRGB *ledarray, uint16_t leds)

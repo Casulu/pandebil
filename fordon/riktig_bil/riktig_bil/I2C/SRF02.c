@@ -1,5 +1,8 @@
 #include <util/delay.h>
+#include <stdbool.h>
 #include "i2cmaster.h"
+
+uint16_t srf02_timer;
 
 void srf02_trigger(char srf02)
 {
@@ -25,4 +28,22 @@ int srf02_get_distance(char srf02)
 	srf02_trigger(srf02);
 	_delay_ms(70);
 	return srf02_read(srf02);
+}
+
+void srf02_timer_tick()
+{
+	if (srf02_timer > 0)
+	{
+		srf02_timer--;
+	}
+}
+
+bool srf02_timer_alarm()
+{
+	return (srf02_timer == 0);
+}
+
+void srf02_timer_reset()
+{
+	srf02_timer = 700;
 }

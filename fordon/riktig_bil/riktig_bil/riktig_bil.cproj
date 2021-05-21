@@ -171,6 +171,12 @@
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="MOTOR\drive_register.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="MOTOR\drive_register.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="MOTOR\motor.c">
       <SubType>compile</SubType>
     </Compile>
@@ -187,6 +193,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="PIEZO\song.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="PIEZO\song_library.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="PIEZO\song_library.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="SPI\display.c">
