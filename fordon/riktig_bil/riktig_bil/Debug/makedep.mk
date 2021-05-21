@@ -10,11 +10,15 @@ I2C\twimaster.c
 
 main.c
 
+MOTOR\drive_register.c
+
 MOTOR\motor.c
 
 PIEZO\piezo.c
 
 PIEZO\song.c
+
+PIEZO\song_library.c
 
 SPI\display.c
 

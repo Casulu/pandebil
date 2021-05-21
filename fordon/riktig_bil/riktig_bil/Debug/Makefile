@@ -47,9 +47,11 @@ C_SRCS +=  \
 ../I2C/SRF02.c \
 ../I2C/twimaster.c \
 ../main.c \
+../MOTOR/drive_register.c \
 ../MOTOR/motor.c \
 ../PIEZO/piezo.c \
 ../PIEZO/song.c \
+../PIEZO/song_library.c \
 ../SPI/display.c \
 ../SPI/spi.c \
 ../UART/uart.c \
@@ -67,9 +69,11 @@ I2C/portextender.o \
 I2C/SRF02.o \
 I2C/twimaster.o \
 main.o \
+MOTOR/drive_register.o \
 MOTOR/motor.o \
 PIEZO/piezo.o \
 PIEZO/song.o \
+PIEZO/song_library.o \
 SPI/display.o \
 SPI/spi.o \
 UART/uart.o \
@@ -80,9 +84,11 @@ I2C/portextender.o \
 I2C/SRF02.o \
 I2C/twimaster.o \
 main.o \
+MOTOR/drive_register.o \
 MOTOR/motor.o \
 PIEZO/piezo.o \
 PIEZO/song.o \
+PIEZO/song_library.o \
 SPI/display.o \
 SPI/spi.o \
 UART/uart.o \
@@ -93,9 +99,11 @@ I2C/portextender.d \
 I2C/SRF02.d \
 I2C/twimaster.d \
 main.d \
+MOTOR/drive_register.d \
 MOTOR/motor.d \
 PIEZO/piezo.d \
 PIEZO/song.d \
+PIEZO/song_library.d \
 SPI/display.d \
 SPI/spi.d \
 UART/uart.d \
@@ -106,9 +114,11 @@ I2C/portextender.d \
 I2C/SRF02.d \
 I2C/twimaster.d \
 main.d \
+MOTOR/drive_register.d \
 MOTOR/motor.d \
 PIEZO/piezo.d \
 PIEZO/song.d \
+PIEZO/song_library.d \
 SPI/display.d \
 SPI/spi.d \
 UART/uart.d \
@@ -156,6 +166,13 @@ I2C/twimaster.o: ../I2C/twimaster.c
 	@echo Finished building: $<
 	
 
+MOTOR/drive_register.o: ../MOTOR/drive_register.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=8000000  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\include"  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -mmcu=atmega328p -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\gcc\dev\atmega328p" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
 MOTOR/motor.o: ../MOTOR/motor.c
 	@echo Building file: $<
 	@echo Invoking: AVR/GNU C Compiler : 5.4.0
@@ -171,6 +188,13 @@ PIEZO/piezo.o: ../PIEZO/piezo.c
 	
 
 PIEZO/song.o: ../PIEZO/song.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=8000000  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\include"  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -mmcu=atmega328p -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\gcc\dev\atmega328p" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
+PIEZO/song_library.o: ../PIEZO/song_library.c
 	@echo Building file: $<
 	@echo Invoking: AVR/GNU C Compiler : 5.4.0
 	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=8000000  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\include"  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -mmcu=atmega328p -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\gcc\dev\atmega328p" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 

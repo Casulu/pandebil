@@ -1,8 +1,13 @@
 #include <avr/io.h>
 #include <stdio.h>
 #include <util/delay.h>
+#include <string.h>
+#include <stdbool.h>
 #include "spi.h"
 #include "display.h"
+
+volatile char buff[49];
+volatile bool buff_uppdated;
 
 void display_port_init(void)
 {
@@ -65,6 +70,13 @@ void display_init(void)
 	
 	PORTC |= (1<<RS_DISP);
 	PORTB |= (1<<SS_DISP);
+	
+	for (int i = 0; i < 48; i++)
+	{
+		buff[i] = ' ';
+	}
+	buff[48] = '\0';
+	buff_uppdated = false;
 }
 
 int display_put_char(char c, FILE *stream)
@@ -96,7 +108,6 @@ void display_char(char c)
 	_delay_us(30);
 	
 	PORTB |= (1<<SS_DISP);
-	return 0;
 }
 
 void display_move_cursor(int steps)
@@ -141,4 +152,20 @@ void display_clear()
 	_delay_ms(4);
 	PORTC |= (1<<RS_DISP);
 	PORTB |= (1<<SS_DISP);
+}
+
+void display_buff(void)
+{
+	if (buff_uppdated == true)
+	{
+		display_clear();
+		printf("%s", buff);
+		buff_uppdated = false;
+	}
+}
+
+void display_add_to_buff(const char* string, uint8_t length, uint8_t position)
+{
+	strncpy((char*)buff + position, string, length);
+	buff_uppdated = true;
 }
