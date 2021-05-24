@@ -47,19 +47,20 @@ try:
         
     while True:
         try:
-            line = ser.readline().decode().strip()
+            line = ser.readline().decode()
         except:
             print("Could not decode incoming line")
             continue
-
-        
-        try:
-            out_topic = topics[int(line[0])]
-        except:
-            print(f"Invalid topic identifier in line: {line}")
-            continue
-        print("publishing \"{}\"".format(line))
-        client.publish(out_topic, line)
+        if line[0] == '-':
+            print("Debug: " + line)
+        else:            
+            try:
+                out_topic = topics[int(line[0])]
+            except:
+                print(f"Invalid topic identifier in line: {line}")
+                continue
+            print("publishing \"{}\"".format(line))
+            client.publish(out_topic, line)
 
 # handle list index error (i.e. assume no data received)
 except (IndexError):

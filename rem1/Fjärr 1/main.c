@@ -13,6 +13,7 @@
 #include <string.h>
 #include <avr/pgmspace.h>
 #include "uart.h"
+#include "fiveinarow.h"
 #include "util/lcd.h"
 #include "util/spi.h"
 #include "util/adc.h"
@@ -25,6 +26,7 @@
 #define HONKBTN 3
 #define EXTRABTN 2
 #define DEADMANBTN 4
+#define GAMEBTN 6
 #define LED_DDR DDRD
 #define LED_PORT PORTD
 #define LEDG 5
@@ -48,29 +50,46 @@
 					SETBIT(x, y);\
 				} else CLEARBIT(x, y);\
 			}
+#define DEADMAN_PRESSED (!(BTN_PIN & 1<<DEADMANBTN))
 
 void timer_init();
 void btn_init();
 void led_init();
 void do_normal_program();
+void do_fir_actions();
 void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args);
 void display_sensors();
 void print_lcd_static();
 void send_move_command();
+void enter_main_mode();
 
 volatile uint8_t uart_linebuf[20];
 volatile uint8_t uart_bufind = 0;
+
 volatile uint8_t heart_hundreths = 0;
 volatile uint8_t command_hundreths = 0;
 volatile uint8_t debounce_hundreths = 0;
+
 volatile char sensor_buf[16];
 volatile bool sensors_received = false;
-volatile uint8_t program_mode = MAIN_MODE;
-volatile uint16_t x_rest = 511;
-volatile uint16_t y_rest = 507; 
+
+volatile uint16_t x_rest = 512;
+volatile uint16_t y_rest = 501; 
+volatile uint16_t z_rest = 633;
 int16_t last_left = 0;
 int16_t last_right = 0;
 char itoabuf[15] = "03";
+
+volatile uint8_t program_mode = MAIN_MODE;
+volatile bool game_prompted = false;
+volatile bool controller_rested = true;
+volatile bool redraw = true;
+volatile bool request_sent = false;
+volatile bool punished = false;
+volatile uint16_t timeout_hundreths = 0;
+volatile uint8_t game_over = 0;
+char placebuf[5];
+char row_buf[49];
 
 
 int main(void)
@@ -78,6 +97,7 @@ int main(void)
 	spi_init();
 	_delay_ms(100);
 	lcd_init();
+	fiveinarow_init();
 	adc_init();
 	uart_init();
 	uart_flush();
@@ -102,31 +122,122 @@ int main(void)
 }
 
 void do_fir_actions(){
-	
+	if(game_over !=  0){
+		_delay_ms(1000);
+		enter_main_mode(game_over == 1 ? "You won!" : "You lost!");
+	} else{
+		if(DEADMAN_PRESSED){
+			fiveinarow_place(placebuf, '3');
+			if(placebuf[0] != '\0'){
+				if(fiveinarow_check_win()){
+					game_over = 1;
+				}
+				uart_send_line(placebuf);
+				redraw = true;
+			}
+		}
+		
+		uint16_t x = read_avg_adc(1, 20);
+		uint16_t y = read_avg_adc(2, 20);
+		
+		if(read_avg_adc(0, 5) > z_rest-5) controller_rested = true;
+		
+		if(controller_rested){
+			if(x > x_rest+40){
+				fiveinarow_down();
+				redraw = true;
+				controller_rested = false;
+			}
+			else if(x < x_rest-45){
+				fiveinarow_up();
+				redraw = true;
+				controller_rested = false;
+			}
+			if(y > y_rest+25){
+				fiveinarow_left();
+				redraw = true;
+				controller_rested = false;
+			}
+			else if(y < y_rest-25){
+				fiveinarow_right();
+				redraw = true;
+				controller_rested = false;
+			}
+			
+		}
+		if(redraw){
+			fiveinarow_render(row_buf);
+			//Draw field
+			set_cursor_pos(0);
+			write_lcd_string(row_buf);
+		}	
+	}
+	_delay_ms(50);
+}
+
+void enter_main_mode(char* message){
+	program_mode = MAIN_MODE;
+	game_prompted = false;
+	redraw = true;
+	request_sent = false;
+	messages_force(message);
+}
+
+void enter_fir_mode(){
+	program_mode = FIR_MODE;
+	game_over = 0;
+	redraw = true;
+	if(LED_PORT & (1<<LEDG)){
+		uart_send_line("040");
+		LED_PORT &= ~(1<<LEDG);
+	}
 }
 
 void do_normal_program(){
-	messages_move_queue();
-	if(!output_buf_read){
-		set_cursor_pos(32);
-		char* buffer = (char*)messages_get_buffer();
-		/*If buffer is empty, write clear line. Ottherwise write buffer*/
-		write_lcd_string((buffer[0] == '\0') ? "                " : buffer);
-	}
-	if(sensors_received){
-		display_sensors();
-		sensors_received = false;
-	}
-	if(!(BTN_PIN & 1<<DEADMANBTN)){
-		if(!(LED_PORT & (1<<LEDG))){
-			uart_send_line("041");
-			LED_PORT |= 1<<LEDG;
+	if(game_prompted){
+		if(redraw){
+			clear_LCD();
+			set_cursor_pos(16);
+			write_lcd_string("Want to play?");
+			redraw = false;
 		}
-		send_move_command();
-		} else{
-		if(LED_PORT & (1<<LEDG)){
+		if(DEADMAN_PRESSED){
+			enter_fir_mode();
+			fiveinarow_setup(true);
+			_delay_ms(100);
+		}
+	} else if(redraw){
+		clear_line(0);
+		clear_line(1);
+		print_lcd_static();
+		redraw = false;
+	} else{
+		messages_move_queue();
+		if(!output_buf_read){
+			set_cursor_pos(32);
+			char* buffer = (char*)messages_get_buffer();
+			/*If buffer is empty, write clear line. Otherwise write buffer*/
+			write_lcd_string((buffer[0] != '\0') ? buffer :  "                ");
+		}
+		if(sensors_received){
+			display_sensors();
+			sensors_received = false;
+		}
+		if(DEADMAN_PRESSED && !punished){
+			if(!(LED_PORT & (1<<LEDG))){
+				uart_send_line("041");
+				LED_PORT |= 1<<LEDG;
+			}
+			send_move_command();
+		} else if(LED_PORT & (1<<LEDG)){
 			uart_send_line("040");
 			LED_PORT &= ~(1<<LEDG);
+		}
+		if(!(PINB & 1<<GAMEBTN) && !request_sent){
+			uart_send_line("33.");
+			messages_force("Invitation sent");
+			request_sent = true;
+			timeout_hundreths = 0;
 		}
 	}
 	_delay_ms(50);
@@ -184,7 +295,15 @@ ISR(TIMER2_COMPA_vect){
 	if(command_hundreths < CMD_DELAY){
 		command_hundreths++;
 	}
-	if(debounce_hundreths > 0) debounce_hundreths--;
+	if(debounce_hundreths > 0){
+		debounce_hundreths--;
+	}
+	if(timeout_hundreths < 5000){
+		timeout_hundreths++;
+	} else{
+		request_sent = false;
+		timeout_hundreths = 0;
+	}
 	messages_timerproc();
 }
 
@@ -224,13 +343,32 @@ void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args){
 					break;
 				case '3':
 					if(program_mode == FIR_MODE){
-						
+						if(*args >= 'A'){
+							enter_main_mode("Game canceled");
+						} else{
+							fiveinarow_recive((char*)(args-2));
+							if(fiveinarow_check_win()){
+								game_over = 2;
+								//Punishment
+							}
+							redraw = true;
+						}
+					} else if(*args < '0'){
+						game_prompted = true;
+						redraw = true;
 					} else{
-						if(args[0] < '0') program_mode = FIR_MODE;	
+						enter_fir_mode();
+						fiveinarow_setup(false);
+						fiveinarow_recive((char*)(args-2));
 					}
 					break;
 				case '4':
-					CHANGEBIT(LED_PORT, LEDR1, args[0]-'0');
+					if(args[0] == '1'){
+						SETBIT(LED_PORT, LEDR1);
+					} else{
+						CLEARBIT(LED_PORT, LEDR1);
+						punished = false;
+					}
 					break;
 			}
 			break;
@@ -239,17 +377,13 @@ void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args){
 
 void display_sensors(){
 	char* args = (char*)sensor_buf;
-	
 	set_cursor_pos(CR_POS);
 	write_lcd_char((args[0] == '0') ? 'R' : '_');
 	set_cursor_pos(CL_POS);
 	write_lcd_char((args[1] == '0') ? 'L' : '_');
 	set_cursor_pos(PIR_POS);
 	write_lcd_char((args[3] == '0') ? 'X' : '_');
-	if(args[2] == '0'){
-		Summer_PlayMelody(MELODY_HONK);
-		
-	}
+	if(args[2] == '0') Summer_PlayMelody(MELODY_HONK);
 	
 	
 	uint8_t b = 5;
@@ -293,22 +427,34 @@ ISR(USART_RX_vect){
 void btn_init(){
 	BTN_DDR &= ~((1<<HONKBTN)|(1<<DEADMANBTN)|(1<<EXTRABTN));
 	BTN_PORT |= (1<<HONKBTN)|(1<<DEADMANBTN)|(1<<EXTRABTN);
+	DDRB &= ~(1<<GAMEBTN);
+	PORTB |= 1<<GAMEBTN;
 	EICRA = (2<<ISC00)|(2<<ISC10);
 	EIMSK = 3;
 }
 
 //Extra
 ISR(INT0_vect){
-	if((BTN_PIN & 1<<DEADMANBTN) && (read_avg_adc(0, 5) > 630)){
-		x_rest = read_avg_adc(1, 25);
-		y_rest = read_avg_adc(2, 25);
+	if(program_mode == FIR_MODE){
+		enter_main_mode("Game canceled");
+		uart_send_line("33A");
+		punished = true;
+	} else{
+		if(game_prompted){
+			game_prompted = false;
+			redraw = true;
+		} else if((BTN_PIN & 1<<DEADMANBTN) && (read_adc(0) > z_rest-5)){
+			z_rest = read_avg_adc(0, 25);
+			x_rest = read_avg_adc(1, 25);
+			y_rest = read_avg_adc(2, 25);
+		}
 	}
 }
 
 //Honk
 ISR(INT1_vect){
 	if(debounce_hundreths == 0){
-		if(!(BTN_PIN & 1<<DEADMANBTN)){
+		if(DEADMAN_PRESSED){
 			uart_send_line("020");
 			} else{
 			uart_send_line("32");

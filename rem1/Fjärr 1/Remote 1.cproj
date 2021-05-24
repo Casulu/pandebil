@@ -144,6 +144,12 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="fiveinarow.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="fiveinarow.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
