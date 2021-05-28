@@ -8,13 +8,13 @@
 
 static bool fiveinarow_is_char(uint8_t x, uint8_t y, char c);
 
+volatile bool row_player_turn = true;
 static volatile char row_markers[15][15];
 static volatile uint8_t row_cursor_x = 0;
 static volatile uint8_t row_cursor_y = 0;
 static volatile uint8_t row_last_x = 0;
 static volatile uint8_t row_last_y = 0;
 static volatile uint8_t row_display_pos = 0;
-static volatile bool row_turn = true;
 static const uint8_t x_curs_char[8] PROGMEM = {0x11, 0x15, 0x1F, 0x0E, 0x1F, 0x15, 0x11, 0x00};
 static const uint8_t o_curs_char[8] PROGMEM = {0x0E, 0x15, 0x15, 0x1F, 0x15, 0x15, 0x0E, 0x00};
 static const uint8_t under_char[8] PROGMEM = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1F};
@@ -33,7 +33,7 @@ void fiveinarow_setup(bool turn){
 	row_cursor_x = 7;
 	row_cursor_y = 7;
 	row_display_pos = 6;
-	row_turn = turn;
+	row_player_turn = turn;
 	
 	for(uint8_t q = 0; q < 15; q++){
 		for(uint8_t i = 0; i < 15; i++){
@@ -45,27 +45,31 @@ void fiveinarow_left(){
 	if(row_cursor_x == 0)row_cursor_x = 1;
 	row_cursor_x--;
 }
+
 void fiveinarow_right(){
 	row_cursor_x++;
 	if(row_cursor_x > 14)row_cursor_x = 14;
 }
+
 void fiveinarow_up(){
 	if(row_cursor_y == 0)row_cursor_y = 1;
 	row_cursor_y--;
 	
 	if(row_cursor_y < row_display_pos)row_display_pos = row_cursor_y;
 }
+
 void fiveinarow_down(){
 	row_cursor_y++;
 	if(row_cursor_y > 14)row_cursor_y = 14;
 	
 	if(row_cursor_y > row_display_pos+2)row_display_pos = row_cursor_y-2;
 }
+
 void fiveinarow_place(char* message, char topic){
-	if(row_turn && row_markers[row_cursor_x][row_cursor_y] == ' '){
+	if(row_player_turn && row_markers[row_cursor_x][row_cursor_y] == ' '){
 		row_last_x = row_cursor_x;
 		row_last_y = row_cursor_y;
-		row_turn = false;
+		row_player_turn = false;
 		
 		row_markers[row_cursor_x][row_cursor_y] = 'X';
 		message[0] = topic;
@@ -80,7 +84,7 @@ void fiveinarow_place(char* message, char topic){
 }
 
 void fiveinarow_recive(char* message){
-	row_turn = true;
+	row_player_turn = true;
 
 	row_last_x = message[2]-48;
 	row_last_y = message[3]-48;
@@ -115,7 +119,7 @@ void fiveinarow_render(char* row_buf){
 		}
 	}
 	uint8_t cursor_string_pos = ((row_cursor_y-row_display_pos)*16)+row_cursor_x+1;
-	if(row_turn){
+	if(row_player_turn){
 		switch(row_buf[cursor_string_pos]){
 			case 'X':
 				row_buf[cursor_string_pos] = X_CURS_CODE;

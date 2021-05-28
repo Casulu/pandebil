@@ -174,16 +174,16 @@
     <Compile Include="util\messages.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="util\music.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="util\music.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="util\spi.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="util\spi.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="util\summer.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="util\summer.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

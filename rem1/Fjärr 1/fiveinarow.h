@@ -17,6 +17,8 @@
 #include <stdbool.h>
 #include "util/lcd.h"
 
+extern volatile bool row_player_turn;
+
 void fiveinarow_init();
 void fiveinarow_setup(bool turn);
 void fiveinarow_left();

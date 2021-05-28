@@ -14,7 +14,7 @@ util\lcd.c
 
 util\messages.c
 
-util\spi.c
+util\music.c
 
-util\summer.c
+util\spi.c
 

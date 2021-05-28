@@ -147,6 +147,12 @@ void set_character(uint8_t char_code, uint8_t rows[8]){
 	PORTB |= 1<<CSB;
 }
 
+/************************************************************************/
+/* Set a given address in CGRAM to a given bitmap stored in pgm_space	*/
+/* @param char_code The address or char code in CGRAM to write to		*/
+/* @param rows An array of 8 bytes where each bytes b0-b4 is			*/
+/*	      a row of the character. Must be stored in program memory		*/
+/************************************************************************/
 void set_character_pgm(uint8_t char_code, const uint8_t rows[8]){
 	PORTB &= ~(1<<CSB);   //Clear CSB
 	for (uint8_t i = 0; i < 8; i++){
