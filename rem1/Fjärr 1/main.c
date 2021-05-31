@@ -44,6 +44,11 @@
 
 #define NUM_SONGS 5
 #define MAX_SONG_LEN 256
+#define HONK_SONG 0
+#define USSR_SONG 1
+#define AMOGUS_SONG 2
+#define GERUDO_SONG 3
+#define UNTITLED_SONG 4
 
 #define MAIN_MODE 0
 #define FIR_MODE 1
@@ -63,6 +68,7 @@ void led_init();
 void do_normal_actions();
 void do_fir_actions();
 void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args);
+void process_fir_command(volatile uint8_t* args);
 void display_sensors();
 void print_lcd_static();
 void send_move_command();
@@ -101,19 +107,22 @@ static const uint8_t melodies[NUM_SONGS][MAX_SONG_LEN+2] PROGMEM = {
 volatile uint8_t uart_linebuf[20];
 volatile uint8_t uart_bufind = 0;
 
+/*Button debounce check*/
+uint8_t gamebtn_last = 0;
+
 /*ISR-counters*/
-volatile uint8_t move_delay = MOVE_DELAY_VAL;
+volatile uint8_t fir_cursor_move_delay = MOVE_DELAY_VAL;
 volatile uint8_t heart_hundreths = 0;
-volatile uint8_t command_hundreths = 0;
-volatile uint8_t debounce_hundreths = DEBOUNCE_VAL;
-volatile uint16_t timeout_hundreths = 0;
+volatile uint8_t move_command_hundreths = 0;
+volatile uint8_t honk_debounce_hundreths = DEBOUNCE_VAL;
+volatile uint16_t invite_timeout_hundreths = 0;
 
 /*Sensor data buffer*/
 volatile char sensor_buf[16];
 volatile bool sensors_received = false;
 
 /*Rest variables*/
-volatile uint16_t x_rest = 512;
+volatile uint16_t x_rest = 512; /*Typical resting values for prototype controller*/
 volatile uint16_t y_rest = 501; 
 volatile uint16_t z_rest = 633;
 /*Stores last outputs*/
@@ -125,7 +134,6 @@ char itoabuf[15] = "03"; //Alwyas starts with "03"
 /*Variables for five in a row handling*/
 volatile uint8_t program_mode = MAIN_MODE;
 volatile bool game_prompted = false;
-volatile bool controller_rested = true;
 volatile bool redraw = true;	//Also used for marking redrawing in main mode
 volatile bool request_sent = false;
 volatile bool punished = false;
@@ -181,7 +189,7 @@ void do_fir_actions(){
 				if(fiveinarow_check_win()){ /*Check for win*/
 					game_over = 1;
 					punished = false;
-					music_play_song_pgm(melodies[2]);
+					music_play_song_pgm(melodies[AMOGUS_SONG]);
 				}
 				uart_send_line(placebuf);
 				redraw = true;
@@ -190,29 +198,25 @@ void do_fir_actions(){
 			uint16_t x = read_avg_adc(1, 20);
 			uint16_t y = read_avg_adc(2, 20);
 			
-			/*Reset rested state if controller is flat*/
-			if(move_delay == 0){
+			
+			if(fir_cursor_move_delay == 0){
 				if(x > x_rest+20){
 					fiveinarow_down();
 					redraw = true;
-					controller_rested = false;
 				}
 				else if(x < x_rest-15){
 					fiveinarow_up();
 					redraw = true;
-					controller_rested = false;
 				}
 				if(y > y_rest+20){
 					fiveinarow_left();
 					redraw = true;
-					controller_rested = false;
 				}
 				else if(y < y_rest-20){
 					fiveinarow_right();
 					redraw = true;
-					controller_rested = false;
 				}
-				move_delay = MOVE_DELAY_VAL;
+				fir_cursor_move_delay = MOVE_DELAY_VAL;
 			}
 			if(redraw){
 				draw_five_map();
@@ -290,19 +294,24 @@ void do_normal_actions(){
 			uart_send_line("340"); /*Send deadman off to rem2*/
 			LED_PORT &= ~(1<<LEDG); /*Disable LED*/
 		}
-		/*Poll for game button*/
-		if(!(PINB & 1<<GAMEBTN) && !request_sent){ /*If button is sent and to request is waiting, send game request*/
-			uart_send_line("33."); /*Game request to rem2. '.' < '0'*/
-			messages_force("Invitation sent");
-			request_sent = true;
-			timeout_hundreths = 0;
-		}
+		
+		if(GAMEBTN_PRESSED){
+			if(DEADMAN_PRESSED){
+				if(gamebtn_last != GAMEBTN_PRESSED) uart_send_line("08"); /*Return car to home*/;
+			} else if(!request_sent){ /*If button is pressed and no request is waiting, send game request*/
+				uart_send_line("33."); /*Game request to rem2. '.' < '0'*/
+				messages_force("Invitation sent");
+				request_sent = true;
+				invite_timeout_hundreths = 0;
+			}
+			gamebtn_last = 1;
+		} else gamebtn_last = 0;
 	}
 	_delay_ms(50);
 }
 
 void send_move_command(){
-	if(command_hundreths == CMD_DELAY){ /*If no cooldown*/
+	if(move_command_hundreths == CMD_DELAY){ /*If no cooldown*/
 		int16_t x_diff = x_rest - read_avg_adc(1, 25);
 		int16_t y_diff = y_rest - read_avg_adc(2, 25);
 		int16_t left = x_diff+y_diff;
@@ -331,7 +340,7 @@ void send_move_command(){
 			itoa(right, itoabuf+len, 10);
 			/*Send string*/
 			uart_send_line(itoabuf);
-			command_hundreths = 0; /*Reset cooldown*/
+			move_command_hundreths = 0; /*Reset cooldown*/
 		}
 		last_left = left;
 		last_right = right;
@@ -353,16 +362,16 @@ ISR(TIMER2_COMPA_vect){
 		heart_hundreths = 0;
 	}
 	/*Cooldown for sending move commands to vehicle*/
-	if(command_hundreths < CMD_DELAY) command_hundreths++;
+	if(move_command_hundreths < CMD_DELAY) move_command_hundreths++;
 	/*Cooldown for honk button to reduce debounce*/
-	if(debounce_hundreths > 0) debounce_hundreths--;
+	if(honk_debounce_hundreths > 0) honk_debounce_hundreths--;
 	/*Timout for sending game invitations*/
-	if(request_sent && timeout_hundreths < TIMEOUT_VAL) timeout_hundreths++;
+	if(request_sent && invite_timeout_hundreths < TIMEOUT_VAL) invite_timeout_hundreths++;
 	else{
 		request_sent = false;
-		timeout_hundreths = 0;
+		invite_timeout_hundreths = 0;
 	}
-	if(move_delay > 0) move_delay--;
+	if(fir_cursor_move_delay > 0) fir_cursor_move_delay--;
 	/*Timer proc for messages module*/
 	messages_timerproc();
 }
@@ -402,29 +411,7 @@ void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args){
 					music_play_song_pgm(melodies[args[0]-'0']);
 					break;
 				case '3': /*Five in a row related command received*/
-					if(program_mode == FIR_MODE){ /*If already in a game*/
-						if(*args >= 'A'){ /*Protocol dictates that argument over 'A' is "Cancel match" during match*/
-							enter_main_mode("Game canceled");
-						} else{ /*All other arguments during match are moves*/
-							if(!row_player_turn){
-								fiveinarow_recive((char*)(args-2));
-								music_play_note(NOTE(G_PITCH, 2, SIXTEENTH_NOTE), 100);
-								if(fiveinarow_check_win()){
-									game_over = 2; /*Mark game as over and lost*/
-									music_play_song_pgm(melodies[4]);
-								}
-								redraw = true;	
-							}
-						}
-					} else if(*args < '0'){ /*Protocol dictates that outside of a match < '0' means "Shall we play?"*/
-						game_prompted = true;
-						redraw = true;
-					} else if(*args < 'A'){ /*Else the command received is the first move of the opponent*/
-						enter_fir_mode();
-						fiveinarow_setup(false); /*Start match where opponent starts first*/
-						fiveinarow_recive((char*)(args-2)); /*Receive first move*/
-						music_play_note(NOTE(G_PITCH, 2, SIXTEENTH_NOTE), 100);
-					}
+					process_fir_command(args);
 					break;
 				case '4': /*Received deadman info from rem2*/
 					/*Set lamp to correspond with opponents deadman switch*/
@@ -441,6 +428,32 @@ void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args){
 	}
 }
 
+void process_fir_command(volatile uint8_t* args){
+	if(program_mode == FIR_MODE){ /*If already in a game*/
+		if(*args >= 'A'){ /*Protocol dictates that argument over 'A' is "Cancel match" during match*/
+			enter_main_mode("Game canceled");
+			} else{ /*All other arguments during match are moves*/
+			if(!row_player_turn){
+				fiveinarow_recive((char*)(args-2));
+				music_play_note(NOTE(G_PITCH, 2, SIXTEENTH_NOTE), 100);
+				if(fiveinarow_check_win()){
+					game_over = 2; /*Mark game as over and lost*/
+					music_play_song_pgm(melodies[UNTITLED_SONG]);
+				}
+				redraw = true;
+			}
+		}
+		} else if(*args < '0'){ /*Protocol dictates that outside of a match < '0' means "Shall we play?"*/
+		game_prompted = true;
+		redraw = true;
+		} else if(*args < 'A'){ /*Else the command received is the first move of the opponent*/
+		enter_fir_mode();
+		fiveinarow_setup(false); /*Start match where opponent starts first*/
+		fiveinarow_recive((char*)(args-2)); /*Receive first move*/
+		music_play_note(NOTE(G_PITCH, 2, SIXTEENTH_NOTE), 100);
+	}
+}
+
 void display_sensors(){
 	char* args = (char*)sensor_buf;
 	/*Write out contact sensors, PIR-sensor*/
@@ -451,7 +464,7 @@ void display_sensors(){
 	set_cursor_pos(PIR_POS);
 	write_lcd_char((args[3] == '0') ? 'X' : '_');
 	/*If button is pressed, honk*/
-	if(args[2] == '0') music_play_song_pgm(melodies[0]);
+	if(args[2] == '0') music_play_song_pgm(melodies[HONK_SONG]);
 	
 	/*Read through arguments and store indices of range data*/
 	uint8_t b = 5;
@@ -523,13 +536,13 @@ ISR(INT0_vect){
 
 //Honk
 ISR(INT1_vect){
-	if(debounce_hundreths == 0){ /*If no cooldown*/
+	if(honk_debounce_hundreths == 0){ /*If no cooldown*/
 		if(DEADMAN_PRESSED){
 			uart_send_line("020"); /*Send honk to car*/
 		} else{
 			uart_send_line("32");	/*Send honk to rem2*/
 		}
-		debounce_hundreths = DEBOUNCE_VAL;	
+		honk_debounce_hundreths = DEBOUNCE_VAL;	
 	}
 }
 
