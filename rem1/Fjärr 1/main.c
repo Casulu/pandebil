@@ -433,25 +433,25 @@ void process_fir_command(volatile uint8_t* args){
 		if(*args >= 'A'){ /*Protocol dictates that argument over 'A' is "Cancel match" during match*/
 			enter_main_mode("Game canceled");
 			} else{ /*All other arguments during match are moves*/
-			if(!row_player_turn){
-				fiveinarow_recive((char*)(args-2));
-				music_play_note(NOTE(G_PITCH, 2, SIXTEENTH_NOTE), 100);
-				if(fiveinarow_check_win()){
-					game_over = 2; /*Mark game as over and lost*/
-					music_play_song_pgm(melodies[UNTITLED_SONG]);
+				if(!row_player_turn){
+					fiveinarow_recive((char*)(args-2));
+					music_play_note(NOTE(G_PITCH, 2, SIXTEENTH_NOTE), 100);
+					if(fiveinarow_check_win()){
+						game_over = 2; /*Mark game as over and lost*/
+						music_play_song_pgm(melodies[UNTITLED_SONG]);
+					}
+					redraw = true;
 				}
-				redraw = true;
 			}
-		}
 		} else if(*args < '0'){ /*Protocol dictates that outside of a match < '0' means "Shall we play?"*/
-		game_prompted = true;
-		redraw = true;
+			game_prompted = true;
+			redraw = true;
 		} else if(*args < 'A'){ /*Else the command received is the first move of the opponent*/
-		enter_fir_mode();
-		fiveinarow_setup(false); /*Start match where opponent starts first*/
-		fiveinarow_recive((char*)(args-2)); /*Receive first move*/
-		music_play_note(NOTE(G_PITCH, 2, SIXTEENTH_NOTE), 100);
-	}
+			enter_fir_mode();
+			fiveinarow_setup(false); /*Start match where opponent starts first*/
+			fiveinarow_recive((char*)(args-2)); /*Receive first move*/
+			music_play_note(NOTE(G_PITCH, 2, SIXTEENTH_NOTE), 100);
+		}
 }
 
 void display_sensors(){
