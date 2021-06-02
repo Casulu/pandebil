@@ -20,12 +20,16 @@
 #define Middel_Octave 4
 
 void piezo_init();
-void piezo_play_tone(float tone, uint8_t octave, uint8_t note, uint8_t number);
-void piezo_play_tone_continous(float tone, uint8_t octave);
+void piezo_play_tone(float tone, char octave, char note, char number);
+void piezo_play_tone_continous(float tone, char octave);
 void piezo_test();
-void piezo_pause(uint8_t note);
-void piezo_set_pace(uint16_t bar_time_ms);
+void piezo_pause(char note);
+void piezo_set_pace(int bar_time_ms);
 void piezo_stop();
-void piezo_delay(uint16_t delay);
+void piezo_delay(int delay);
+char piezo_calc_ocr(float tone, char multiplier);
+char piezo_calc_tcc(char octave);
+char piezo_calc_multiplier(char octave);
+void piezo_play_tone_continous_pre_calc(char OCR, char TCC);
 
 #endif /* PIEZO_H_ */

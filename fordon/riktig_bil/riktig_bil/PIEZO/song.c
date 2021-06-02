@@ -1,49 +1,32 @@
 #include <stdbool.h>
+#include <avr/pgmspace.h>
 #include "song.h"
 
-struct note {
-	float tone;
-	char octave;
-	char lenght;
-	char number;
-	bool pause;
-};
-
-struct note* song;
-float pace_ms;
 uint16_t timer;
-uint8_t nr_notes;
 uint8_t current_note;
 bool playing;
+const song* current_song;
 
-void song_empty(uint8_t number_of_notes, uint8_t bars_per_min)
+/*
+ * Sets a song to be played.
+ */
+void song_set(const song* set_song)
 {
-	song = calloc(number_of_notes, sizeof(note));
-	
-	pace_ms = 60000/bars_per_min;
+	current_song = set_song;
 	
 	timer = 0;
-	
-	nr_notes = number_of_notes;
 	
 	current_note = 0;
 	
 	playing = false;
 }
 
-void song_add_note(float tone, char octave, char lenght, char number, bool pause)
-{
-	song[current_note].tone = tone;
-	song[current_note].octave = octave;
-	song[current_note].lenght = lenght;
-	song[current_note].number = number;
-	song[current_note].pause = pause;
-	current_note++;
-}
-
+/*
+ * Starts song if there is one set.
+ */
 void song_start()
 {
-	if (song != NULL)
+	if (current_song != NULL)
 	{
 		current_note = 0;
 		playing = true;
@@ -51,19 +34,27 @@ void song_start()
 	}
 }
 
+/*
+ * Stops a playing song.
+ */
 void song_stop()
 {
 	playing = false;
-	free(song);
-	song = NULL;
+	current_song = NULL;
 	piezo_stop();
 }
 
+/*
+ * Returns whether a song is playing or not.
+ */
 bool song_playing()
 {
 	return playing;
 }
 
+/*
+ * Continues song and should be called on a frequency of 1kHz.
+ */
 void song_play()
 {
 	if (playing)
@@ -73,26 +64,30 @@ void song_play()
 			timer--;
 		}
 		
-		if (current_note == nr_notes && timer == 0)
+		if (current_note == current_song->number_of_notes && timer == 0) //If its the last note and its time has ended. End song.
 		{
-			piezo_stop();
 			song_stop();
 		}
-		else if (timer == 1)
+		else if (timer == 5)
 		{
 			piezo_stop();
 		}
 		else if (timer == 0)
 		{
-			if (song[current_note].pause == false)
+			//Loads note values from program memory.
+			float tone = pgm_read_float(&(current_song->notes[current_note].tone));
+			uint8_t octave = pgm_read_byte(&(current_song->notes[current_note].octave));
+			uint8_t lenght = pgm_read_byte(&(current_song->notes[current_note].length));
+			uint8_t number = pgm_read_byte(&(current_song->notes[current_note].number));
+			if (tone != 0)
 			{
-				piezo_play_tone_continous(song[current_note].tone, song[current_note].octave);
+				piezo_play_tone_continous(tone, octave);
 			}
 			else
 			{
 				piezo_stop();
 			}
-			timer = song[current_note].number * (pace_ms/song[current_note].lenght);
+			timer = (number) * (current_song->pace_ms/(lenght));
 			current_note++;
 		}
 	}
