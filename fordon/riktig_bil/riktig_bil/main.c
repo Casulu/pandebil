@@ -15,6 +15,7 @@
 #include "PIEZO/song.h"
 #include "PIEZO/song_library.h"
 #include "MOTOR/motor.h"
+#include "MOTOR/drive_register.h"
 #include "WS2812/ws2812_config.h"
 #include "WS2812/light_ws2812.h"
 
@@ -26,9 +27,6 @@
 #define DEADMAN_STOP (1<<1)
 #define NO_HEARBEAT (1<<2)
 
-#define CLOSE_TO_WALL_F (1<<0)
-#define CLOSE_TO_WALL_B (1<<1)
-
 #define RED_LED_PORT PORTC
 #define RED_LED_DDR DDRC
 #define RED_LED (1<<0)
@@ -37,6 +35,7 @@ void spi_master_init(void);
 void display_init(void);
 void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args);
 void timer_init();
+void ledstrip_init();
 
 static FILE mystdout = FDEV_SETUP_STREAM(display_put_char,
 NULL,_FDEV_SETUP_WRITE);
@@ -55,16 +54,10 @@ volatile uint16_t sensor_timer;
  * Bit 1: Deadman stop
  * Bit 2: No hearbeat
  */
-volatile char control;
-
-volatile char close_to_wall;
-
-struct cRGB leds[NUM_LEDS];
-volatile char song_timer;
+volatile uint8_t control;
 
 int main(void)
 {
-	song_timer = 0;
 	heartbeat_timer = 0;
 	sensor_timer = 0;
 	control = 0;
@@ -75,14 +68,91 @@ int main(void)
 	_delay_ms(500);
 	display_init();
 	uart_init();
-	uart_flush();
 	motors_init();
 	piezo_init();
 	i2c_init();
 	timer_init();
-	portextender_write(0xff);
+	portextender_set_data(0xff);
+	drive_register_init();
 	RED_LED_PORT &=~ RED_LED;
 	RED_LED_DDR |= RED_LED;
+	ledstrip_init();
+	sei();
+	char msg[17] = "11";
+	uint8_t len = 0;
+	uint16_t distance_front = 0;
+	uint16_t distance_back = 0;
+	/*srf02_trigger(SRF_FRONT);
+	srf02_trigger(SRF_BACK);*/
+	srf02_timer_reset();
+    while (1) 
+    {
+	    //Write set data to portextender
+	    portextender_write();
+		
+	    //Every 70ms recieve data from the range sensor and send another sound wave.
+		if (srf02_timer_alarm() == true)
+		{
+			/*distance_front = srf02_read(SRF_FRONT);
+			distance_back = srf02_read(SRF_BACK);
+			srf02_trigger(SRF_FRONT);
+			srf02_trigger(SRF_BACK);*/
+			distance_front = 40;
+			distance_back = 40;
+			srf02_timer_reset();
+		}
+		
+		//Set if vehicle is close to the wall infront it or not
+		if (distance_front <= (15 + 12) && distance_front > 0) //Sensor is about 11.5?12 cm from edge, if 0 sensor did not detect anything
+		{
+			motor_forward_set_lock(true);
+		}
+		else
+		{
+			motor_forward_set_lock(false);
+		}
+		
+		//Set if vehicle is close to the wall behind it or not
+		if (distance_back <= (15 + 12) && distance_back > 0) //Sensor is about 11.5?12 cm from edge, if 0 sensor did not detect anything
+		{
+			motor_backward_set_lock(true);
+		}
+		else
+		{
+			motor_backward_set_lock(false);
+		}
+		
+		uint8_t portextender_data = portextender_read();
+		
+		//Send sensor data every quarter second.
+		if (sensor_timer == 0)
+		{
+			for(uint8_t i = 2; i < 6; i++){
+				msg[i] = ((portextender_data & (1<<i)) > 0)+'0';
+			}
+			msg[6] = ' ';
+			itoa(distance_front, msg+7, 10);
+			len = strlen(msg);
+			msg[len] = ' ';
+			msg[++len] = '\0';
+			itoa(distance_back, msg+len, 10);
+			len = strlen(msg);
+			msg[len] = '\0';
+			uart_send_line(msg);
+			sensor_timer = 250;
+		}
+		
+		display_buff(); //Displayes the content of a display buffer
+    }
+}
+
+/*
+ * Sets a initiali color on the ledstip.
+ */
+void ledstrip_init()
+{
+	struct cRGB leds[NUM_LEDS];
+	
 	leds[0].b = 0;
 	leds[0].g = 0;
 	leds[0].r = 255;
@@ -123,202 +193,108 @@ int main(void)
 		}
 	}
 	ws2812_setleds(leds, NUM_LEDS);
-	sei();
-	char msg[17] = "11";
-	uint8_t len = 0;
-	int distance_front = 0;
-	int distance_back = 0;
-	//srf02_trigger(SRF_FRONT);
-	//srf02_trigger(SRF_BACK);
-	srf02_timer_reset();
-    while (1) 
-    {
-		if (srf02_timer_alarm() == true)
-		{
-			/*distance_front = srf02_read(SRF_FRONT);
-			distance_back = srf02_read(SRF_BACK);
-			srf02_trigger(SRF_FRONT);
-			srf02_trigger(SRF_BACK);*/
-			distance_front = 17;
-			distance_back = 17;
-			srf02_timer_reset();
-		}
-		distance_front = 17;
-		distance_back = 17;
-		if (distance_front <= (15 + 12) && distance_front > 0)
-		{
-			close_to_wall |= CLOSE_TO_WALL_F;
-			leds[0].b = 255;
-			leds[0].g = 0;
-			leds[0].r = 0;
-			leds[1].b = 255;
-			leds[1].g = 0;
-			leds[1].r = 0;
-			leds[2].b = 255;
-			leds[2].g = 0;
-			leds[2].r = 0;
-			leds[3].b = 255;
-			leds[3].g = 0;
-			leds[3].r = 0;
-		}
-		else
-		{
-			close_to_wall &=~ CLOSE_TO_WALL_F;
-			leds[0].b = 0;
-			leds[0].g = 0;
-			leds[0].r = 255;
-			leds[1].b = 0;
-			leds[1].g = 255;
-			leds[1].r = 255;
-			leds[2].b = 0;
-			leds[2].g = 255;
-			leds[2].r = 255;
-			leds[3].b = 0;
-			leds[3].g = 0;
-			leds[3].r = 255;
-		}
-		
-		if (distance_back <= (15 + 12) && distance_back > 0)
-		{
-			close_to_wall |= CLOSE_TO_WALL_B;
-			leds[4].b = 255;
-			leds[4].g = 0;
-			leds[4].r = 0;
-			leds[5].b = 255;
-			leds[5].g = 0;
-			leds[5].r = 0;
-			leds[6].b = 255;
-			leds[6].g = 0;
-			leds[6].r = 0;
-			leds[7].b = 255;
-			leds[7].g = 0;
-			leds[7].r = 0;
-		}
-		else
-		{
-			close_to_wall &=~ CLOSE_TO_WALL_B;
-			leds[4].b = 0;
-			leds[4].g = 0;
-			leds[4].r = 255;
-			leds[5].b = 0;
-			leds[5].g = 255;
-			leds[5].r = 255;
-			leds[6].b = 0;
-			leds[6].g = 255;
-			leds[6].r = 255;
-			leds[7].b = 0;
-			leds[7].g = 0;
-			leds[7].r = 255;
-		}
-		ws2812_setleds(leds, NUM_LEDS);
-		
-		char portextender_data = portextender_read();
-		if (sensor_timer == 0)
-		{
-			for(uint8_t i = 2; i < 6; i++){
-				msg[i] = ((portextender_data & (1<<i)) > 0)+'0';
-			}
-			msg[6] = ' ';
-			itoa(distance_front, msg+7, 10);
-			len = strlen(msg);
-			msg[len] = ' ';
-			msg[++len] = '\0';
-			itoa(distance_back, msg+len, 10);
-			len = strlen(msg);
-			msg[len] = '\0';
-			uart_send_line(msg);
-			sensor_timer = 2500;
-		}
-		
-		if (control != 0)
-		{
-			motor_set_lock(true);
-		}
-		else
-		{
-			motor_set_lock(false);
-		}
-		
-		if(close_to_wall & CLOSE_TO_WALL_F)
-		{
-			motor_forward_set_lock(true);
-		}
-		else
-		{
-			motor_forward_set_lock(false);
-		}
-		
-		if(close_to_wall & CLOSE_TO_WALL_B)
-		{
-			motor_backward_set_lock(true);
-		}
-		else
-		{
-			motor_backward_set_lock(false);
-		}
-		display_buff();
-    }
 }
 
+/*
+ * Initializes a 1kHz CTC timer.
+ */
+void timer_init()
+{
+	OCR2A = 125;
+	TCCR2A |= (1<<WGM21);
+	TCCR2B |= (1<<CS22);
+	TIMSK2 |= (1<<OCIE2A);
+}
+
+/*
+ * Preforms a command from MQTT.
+ */
 void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args)
 {
 	switch(command){
 		case '0':
-		//Hearbeat
-		heartbeat_timer = 30000;
+		//Hearbeat received
+		heartbeat_timer = 3000;
 		break;
 		case '1':
-		//Textmeddelande
-		display_add_to_buff((char*)args, 16, 32);
+		//Textmessage recieved
+		display_add_to_buff((char*)args, 16, 32); //Display textmessage
 		break;
 		case '2':
-		//Spela låt / tuta
+		//Play song / horn received
 		switch(args[0])
 		{
 			case '0':
-			set_imperial_march();
+			song_set(get_horn_song());
 			song_start();
 			break;
 			case '1':
-			set_halo_theme();
-			song_start();
+			song_stop();
 			break;
 			case '2':
-			set_soviet_anthem();
+			song_set(get_cantina_band_song());
 			song_start();
 			break;
 			case '3':
-			set_mario();
+			song_set(get_imperial_march_song());
 			song_start();
 			break;
 			case '4':
-			set_allstars();
+			song_set(get_soviet_anthem_song());
 			song_start();
 			break;
 			case '5':
-			set_mii();
+			song_set(get_allstars_song());
 			song_start();
 			break;
 			case '6':
-			set_cantina_band();
+			song_set(get_mii_song());
 			song_start();
 			break;
 			case '7':
-			song_stop();
+			song_set(get_halo_theme_song());
+			song_start();
+			break;
+			case '8':	
+			song_set(get_mario_song());
+			song_start();
+			break;
+			case '9':
+			song_set(get_mario_galaxy_song());
+			song_start();
+			break;
+			case 'A':
+			song_set(get_pokemon_center_song());
+			song_start();
+			break;
+			case 'B':
+			song_set(get_petalburg_song());
+			song_start();
+			break;
+			case 'C':
+			song_set(get_heartbeat_song());
+			song_start();
+			break;
+			case 'D':
+			song_set(get_test_song());
+			song_start();
 			break;
 		}
 		break;
 		case '3':
+		//Set wheel speed command recieved
 		if (args[0] == '\0')
 			return;
-		//Sätt hjulfart
-		uint8_t i = 0;
-		while(args[++i] != ' ');
-		args[i++] = '\0';
-		motors_set_speed(atoi((char*)args), atoi((char*)(args+i)));
+		if (drive_register_registers() == true)
+		{
+			uint8_t i = 0;
+			while(args[++i] != ' ');
+			args[i++] = '\0';
+			motors_set_speed(atoi((char*)args), atoi((char*)(args+i))); //Set given wheelspeed
+		}
 		break;
 		case '4':
-		//Deadman set
+		//Deadman set/clear
 		switch(args[0])
 		{
 			case '0':
@@ -334,65 +310,79 @@ void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args)
 				deadman_switches |= REMOTE_JOY;
 			break;
 		}
+		//Set led to indicate if a dead man is set or not
 		switch(deadman_switches)
 		{
 			case 0:
 			control |= DEADMAN_STOP;
 			portextender_port_in(GREEN_LED);
-			portextender_port_in(YELLOW_LED);
 			break;
 			case 3:
 			control |= DEADMAN_STOP;
 			portextender_port_in(GREEN_LED);
-			portextender_port_out(YELLOW_LED);
 			break;
 			default:
 			control &=~ DEADMAN_STOP;
 			portextender_port_out(GREEN_LED);
-			portextender_port_in(YELLOW_LED);
 			break;
 		}
 		break;
 		case '5':
-		//Nödstopp
+		//Emergency break
 		control |= EMERGENCY;
+		//Set led for emergency break
 		RED_LED_PORT |= RED_LED;
 		break;
 		case '6':
-		//Kvittera nödstopp
+		//Clear emergency break
 		control &=~ EMERGENCY;
+		//Turn off emergency break led
 		RED_LED_PORT &=~ RED_LED;
 		break;
 		case '7':
-		//PING
-		uart_send_line("12"); /*PONG*/
+		//PING recieved
+		uart_send_line("12"); //Respond with PONG
 		break;
+		case '8':
+		//Return home command received
+			switch(args[0])
+			{
+				case '0':
+				//Activate return to home
+				if (drive_register_registers() == true)
+				{
+					drive_register_backtrack();
+				}
+				break;
+				case '1':
+				//Reset drive register
+				drive_register_init();
+				break;
+			}
+		break;
+	}
+	
+	//Set if car should break because of emergency break.
+	if (control != 0)
+	{
+		motor_set_lock(true);
+		drive_register_init(); //reset drive register
+	}
+	else
+	{
+		motor_set_lock(false);
 	}
 }
 
-void timer_init()
-{
-	OCR2A = 100;
-	TCCR2A |= (1<<WGM21);
-	TCCR2B |= (1<<CS21);
-	TIMSK2 |= (1<<OCIE2A);
-}
-
-ISR(INT0_vect)
-{
-	
-}
-
-ISR(INT1_vect)
-{
-	
-}
-
+/*
+ * Timer2 compare interrupts. Frequency is 1kHz.
+ * Used for things that is time sensitive.
+ */
 ISR(TIMER2_COMPA_vect)
 {
 	if (heartbeat_timer == 0)
 	{
-		//control |= NO_HEARBEAT;
+		control |= NO_HEARBEAT;
 	}
 	else
 	{
@@ -400,19 +390,21 @@ ISR(TIMER2_COMPA_vect)
 		heartbeat_timer--;
 	}
 	
-	if (song_playing() == true)
+	//Set if car should break because of emergency break.
+	if (control != 0)
 	{
-		song_timer++;
+		motor_set_lock(true);
+		drive_register_init(); //Reset drive register
 	}
 	else
 	{
-		song_timer = 0;
+		motor_set_lock(false);
 	}
 	
-	if (song_timer == 10)
+	//If a song is playing
+	if (song_playing() == true)
 	{
-		song_play();
-		song_timer = 0;
+		song_play(); //Continue song
 	}
 	
 	if (sensor_timer > 0)
@@ -421,16 +413,31 @@ ISR(TIMER2_COMPA_vect)
 	}
 	
 	srf02_timer_tick();
+	drive_register_tick();
+	if (drive_register_registers() == false)
+	{
+		portextender_port_out(YELLOW_LED);
+	}
+	else
+	{
+		portextender_port_in(YELLOW_LED);
+	}
+	motor_tick();
 }
 
+/*
+ * UART receive interrupt. Used when receiving MQTT commands. 
+ */
 ISR(USART_RX_vect){
 	uart_linebuf[line_ind] = UDR0;
-	if(uart_linebuf[line_ind] == '\n'){
+	if(uart_linebuf[line_ind] == '\n')
+	{
 		uart_linebuf[line_ind] = '\0';
-		//Do something
 		perform_command(uart_linebuf[0], uart_linebuf[1], uart_linebuf+2);
 		line_ind = 0;
-		} else{
-		line_ind++;
+	}
+	else
+	{
+	line_ind++;
 	}
 }

@@ -8,9 +8,10 @@
 #define BUTTON 4
 #define PIR 5
 
-char portextender_read();
-void portextender_write(char data);
-void portextender_port_out(char port);
-void portextender_port_in(char port);
+uint8_t portextender_read();
+void portextender_write();
+void portextender_port_out(uint8_t port);
+void portextender_port_in(uint8_t port);
+void portextender_set_data(uint8_t data);
 
 #endif /* PORTEXTENDER_H_ */

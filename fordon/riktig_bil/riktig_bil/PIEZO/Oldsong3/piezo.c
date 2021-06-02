@@ -3,15 +3,15 @@
 #include <util/delay.h>
 #include "piezo.h"
 
-uint16_t piezo_calc_ocr(float tone, uint8_t multiplier);
-uint16_t pace_ms;
+char piezo_calc_ocr(float tone, char multiplier);
+int pace_ms;
 
 /*
- * Initiates the piezo buzzer with OC1A.
+ * Initiates the piezo buzzer with OC2B.
  */
 void piezo_init()
 {
-	TCCR1A = (1<<COM1A0);
+	TCCR1A = (1<<COM0A0);
 	TCCR1B |= (1<<WGM12);
 	DDRB &=~ (1<<DDB1);
 }
@@ -20,7 +20,7 @@ void piezo_init()
  * Sets the pace, must be set to play notes or delays in different lengths.
  * Takes number of bars per minute to calculate the length of a whole note in ms.
  */
-void piezo_set_pace(uint16_t bars_per_min)
+void piezo_set_pace(int bars_per_min)
 {
 	pace_ms = 60000/bars_per_min;
 }
@@ -32,7 +32,7 @@ void piezo_set_pace(uint16_t bars_per_min)
  * The tone input represents the tone and takes frequency for the middle octave.
  * The number input is to be able to play a tone for ex. three quarter notes without interrupt.
  */
-void piezo_play_tone(float tone, uint8_t octave, uint8_t note, uint8_t number)
+void piezo_play_tone(float tone, char octave, char note, char number)
 {
 	piezo_play_tone_continous(tone, octave);
 	piezo_delay(number * (pace_ms/note) - 1);
@@ -44,7 +44,7 @@ void piezo_play_tone(float tone, uint8_t octave, uint8_t note, uint8_t number)
  * Sets a silent delay. The note input tells the length.
  * Ex. if the note parameter is 4 it will be silent in the length of a quarter note.
  */
-void piezo_pause(uint8_t note)
+void piezo_pause(char note)
 {
 	piezo_stop(pace_ms/note);
 	piezo_delay(pace_ms/note);
@@ -55,9 +55,9 @@ void piezo_pause(uint8_t note)
  * The octave input represent the octave.
  * The tone input represents the tone and takes frequency for the middle octave.
  */
-void piezo_play_tone_continous(float tone, uint8_t octave)
+void piezo_play_tone_continous(float tone, char octave)
 {
-	/* Sets TCCR1B and multiplier to get the right tone to the correct octave. */
+	/* Sets TCCR2B and multiplier to get the right tone to the correct octave. */
 	int multiplier;
 	switch(octave)
 	{
@@ -124,10 +124,18 @@ void piezo_play_tone_continous(float tone, uint8_t octave)
 	DDRB |= (1<<DDB1);
 }
 
+void piezo_play_tone_continous_pre_calc(char OCR, char TCC)
+{
+	OCR1A = OCR;
+	TCCR1B = TCC;
+	TCNT1 = 0;
+	DDRB |= (1<<DDB1);
+}
+
 /*
  * Sets a delay for the piezo.
  */
-void piezo_delay(uint16_t delay)
+void piezo_delay(int delay)
 {
 	for (int i = 0; i < delay; i++)
 	{
@@ -150,12 +158,105 @@ void piezo_stop()
 	DDRB &=~ (1<<DDB1);
 }
 
+char piezo_calc_multiplier(char octave)
+{
+	switch(octave)
+	{
+		case 8:
+		return 1;
+		break;
+		
+		case 7:
+		return 2;
+		break;
+		
+		case 6:
+		return 4;
+		break;
+		
+		case 5:
+		return 1;
+		
+		case 4:
+		return 2;
+		
+		case 3:
+		return 1;
+		
+		case 2:
+		return 2;
+		
+		case 1:
+		return 1;
+		
+		case 0:
+		return 2;
+		
+		default:
+		return 1;
+	}
+}
+
+char piezo_calc_tcc(char octave)
+{
+	char tcc = 0;
+	tcc |= (1<<WGM12);
+	switch(octave)
+	{
+		case 8:
+		tcc |= (1<<CS11);
+		tcc &=~ ((1<<CS12) | (1<<CS10));
+		break;
+		
+		case 7:
+		tcc |= (1<<CS11);
+		tcc &=~ ((1<<CS12) | (1<<CS10));
+		break;
+		
+		case 6:
+		tcc |= (1<<CS11);
+		tcc &=~ ((1<<CS12) | (1<<CS10));
+		break;
+		
+		case 5:
+		tcc |= (1<<CS11) | (1<<CS10);
+		tcc &=~ (1<<CS12);
+		break;
+		
+		case 4:
+		tcc |= (1<<CS11) | (1<<CS10);
+		tcc &=~ (1<<CS12);
+		break;
+		
+		case 3:
+		tcc |= (1<<CS12);
+		tcc &=~ ((1<<CS11) | (1<<CS10));
+		break;
+		
+		case 2:
+		tcc |= (1<<CS12);
+		tcc &=~ ((1<<CS11) | (1<<CS10));
+		break;
+		
+		case 1:
+		tcc |= (1<<CS12) | (1<<CS10);
+		tcc &=~ (1<<CS11);
+		break;
+		
+		case 0:
+		tcc |= (1<<CS12) | (1<<CS10);
+		tcc &=~ (1<<CS11);
+		break;
+	}
+	return tcc;
+}
+
 /*
  * Calculates the OCR value to get correct frequency.
  */
-uint16_t piezo_calc_ocr(float tone, uint8_t multiplier)
+char piezo_calc_ocr(float tone, char multiplier)
 {
-	return (uint16_t)round((double)((F_CPU/(2*128*tone))*multiplier-1));
+	return (char)round((double)((F_CPU/(2*128*tone))*multiplier-1));
 }
 
 /*

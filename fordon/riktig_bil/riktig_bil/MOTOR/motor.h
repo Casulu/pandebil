@@ -23,9 +23,10 @@
 #define MOTOR_R_ENC 1<<3*/
 
 void motors_init();
-void motors_set_speed(signed char speed_r, signed char speed_l);
+void motors_set_speed(int8_t speed_r, int8_t speed_l);
 void motor_forward_set_lock(bool lock);
 void motor_backward_set_lock(bool lock);
 void motor_set_lock(bool lock);
+void motor_tick();
 
 #endif /* MOTOR_H_ */
