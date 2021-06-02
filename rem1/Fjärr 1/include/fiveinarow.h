@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "util/lcd.h"
+#include "lcd.h"
 
 extern volatile bool row_player_turn;
 

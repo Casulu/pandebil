@@ -14,18 +14,18 @@
 #include <avr/pgmspace.h>
 #include "uart.h"
 #include "fiveinarow.h"
-#include "util/lcd.h"
-#include "util/spi.h"
-#include "util/adc.h"
-#include "util/music.h"
-#include "util/messages.h"
+#include "lcd.h"
+#include "spi.h"
+#include "adc.h"
+#include "music.h"
+#include "messages.h"
 
 /*I/O-defines*/
 #define HONKBTN 3
 #define EXTRABTN 2
 #define DEADMANBTN 4
 #define GAMEBTN 6
-#define HALFSWITCH ?
+//#define HALFSWITCH 5
 #define LED_DDR DDRD
 #define LED_PORT PORTD
 #define LEDG 5
@@ -61,7 +61,7 @@
 
 #define DEADMAN_PRESSED (!(PIND & 1<<DEADMANBTN))
 #define GAMEBTN_PRESSED (!(PINB & 1<<GAMEBTN))
-//#define HALFSWITCH_TOGGLED (!(PINB & 1<<HALFSWITCH))
+//#define HALFSWITCH_TOGGLED (!(PINC & 1<<HALFSWITCH))
 
 void timer_init();																/*Initiate the 100Hz timer*/
 void btn_init();																/*Initiate buttons and INT0, INT1 for interrupts*/
@@ -348,9 +348,11 @@ void send_move_command(){
 	} else if(right > -5 && right < 5) right = 0;
 	
 	/*if(HALFSWITCH_TOGGLED){
+		uart_send_line("-Hej");
 		left = left/2;
 		right = right/2;
 	}*/
+	
 	/*Ignore duplicate values*/
 	if(left != last_left || right != last_right){
 		/*Build output string*/
@@ -390,6 +392,7 @@ void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args){
 					break;
 				case '1': /*Sensor data received*/
 					strcpy((char*)sensor_buf, (char*)args);
+					if(sensor_buf[2] == '0' && !music_song_is_playing()) music_play_song_pgm(melodies[GERUDO_SONG]);
 					sensors_received = true;
 					break;
 				case '2': /*PONG response to a PING*/
@@ -463,8 +466,6 @@ void display_sensors(){
 	write_lcd_char((args[1] == '0') ? 'L' : '_');
 	set_cursor_pos(PIR_POS);
 	write_lcd_char((args[3] == '0') ? 'X' : '_');
-	/*If button is pressed, honk*/
-	if(args[2] == '0') music_play_song_pgm(melodies[HONK_SONG]);
 	
 	/*Read through arguments and store indices of range data*/
 	uint8_t b = 5;
@@ -511,6 +512,8 @@ void btn_init(){
 	PORTD |= (1<<HONKBTN)|(1<<DEADMANBTN)|(1<<EXTRABTN);
 	DDRB &= ~(1<<GAMEBTN);
 	PORTB |= 1<<GAMEBTN;
+	/*DDRC &= ~(1<<HALFSWITCH);
+	PORTC |= 1<<HALFSWITCH;*/
 	EICRA = (2<<ISC00)|(2<<ISC10);
 	EIMSK = 3;
 }

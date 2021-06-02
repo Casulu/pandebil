@@ -10,6 +10,6 @@ void lcd_init();											/*Initiates the LCD with 3 rows and invisible increme
 void clear_LCD();											/*Clears the LCD*/
 void clear_line(uint8_t linenum);							/*Clears the given line on the LCD*/
 void set_cursor_pos(uint8_t pos);							/*Sets the position of the LCD cursor*/
-uint8_t get_cursor_pos();
-void set_character(uint8_t adress, uint8_t rows[8]);
-void set_character_pgm(uint8_t adress, const uint8_t rows[8]);
+uint8_t get_cursor_pos();									/*Gets the current cursor position*/
+void set_character(uint8_t adress, uint8_t rows[8]);		/*Sets the given adress in CGRAM to the given 8 rows of bits*/
+void set_character_pgm(uint8_t adress, const uint8_t rows[8]);	/*Sets the given adress in CGRAM to the given 8 rows of bits from pgm*/

@@ -7,6 +7,7 @@
 #include "music.h"
 #include <stddef.h>
 
+/*Note system inspired by Filip Henningson from c18*/
 #define NOTE_DURATION_MASK      (0b11100000)
 #define NOTE_PITCH_MASK         (~NOTE_DURATION_MASK)
 
@@ -40,23 +41,27 @@ void music_play_song_pgm(const uint8_t* song){
 void music_play_note(uint8_t note, uint8_t bpm){
 	TIMSK1 |= 1<<OCIE1A;
 	TCCR1B |= 1<<CS10;
-	if(GET_PITCH_EXP(note) == -1){  // Stop buzzer if note is a rest
-		TCCR1A &= ~(1<<COM1A0);
-	} else{                         // Start buzzer and set correct frequency
+	if(GET_PITCH_EXP(note) == -1){  /*If pitch value is zero, note is a rest*/
+		TCCR1A &= ~(1<<COM1A0);		/*Turn buzzer of*/
+	} else{                         /*Start buzzer and set frequency*/
 		TCCR1A |= 1<<COM1A0;
-		OCR1A = LOWC_OCR / pow(ROOT12_2,GET_PITCH_EXP(note));
+		OCR1A = LOWC_OCR/pow(ROOT12_2,GET_PITCH_EXP(note));		/*See https://en.wikipedia.org/wiki/Equal_temperament*/
 	}
-	// cycles needed = frequency / (bar time) / (note length divisor)
+	// cycles needed = frequency/(time of one bar)/(note length divisor)
 	curr_note_time = ((F_CPU/(OCR1A + 1))/(bpm/(240.0)))/GET_DURATION_DIV(note);
 }
 
+bool music_song_is_playing(){
+	return curr_song != NULL;
+}
+
 ISR(TIMER1_COMPA_vect){
-	if(--curr_note_time == 0){
+	if(--curr_note_time == 0){ /*If note is over*/
 		uint8_t note;
 		/*Read next note*/
 		if(curr_song != NULL && (note = pgm_read_byte(&(curr_song[++note_ind]))) != 0){
 			music_play_note(note, curr_bpm);
-			} else{
+		} else{ /*Else song is over. Shut buzzer off and clear song*/
 			TIMSK1 = 0;
 			TCCR1B &= ~(1<<CS10);
 			curr_song = NULL;

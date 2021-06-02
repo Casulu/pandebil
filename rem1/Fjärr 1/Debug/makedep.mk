@@ -6,15 +6,15 @@ fiveinarow.c
 
 main.c
 
-uart.c
+messages.c
+
+music.c
 
 util\adc.c
 
 util\lcd.c
 
-util\messages.c
-
-util\music.c
-
 util\spi.c
+
+util\uart.c
 
