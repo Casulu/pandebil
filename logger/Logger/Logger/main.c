@@ -123,7 +123,7 @@ int main(void) {
 			do {
 				// Get next index
 				bufTail = (bufTail + 1) & BUF_MASK;
-				if (buffer[bufTail] == '\0') { // Reached end of message
+				if (buffer[bufTail] == '\0' && messageInd != 0) { // Reached end of message
 					uint8_t offset = message[--messageInd];
 					message[messageInd] = '\0';
 					readMsg((char *) message, offset);
