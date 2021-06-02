@@ -37,33 +37,6 @@ const song* get_mario_song()
 /* Super Mario Melodi end                                               */
 /************************************************************************/
 
-
-/************************************************************************/
-/* Hearbeat start                                                       */
-/************************************************************************/
-
-#define HEARTBEAT_NR_NOTES 1
-
-const note heartbeat_notes[HEARTBEAT_NR_NOTES] PROGMEM = {
-	{C_TONE, Middel_Octave + 1, 8, 1}
-};
-
-const song heartbeat_song = {
-	SONG_CALC_PACE(62),
-	HEARTBEAT_NR_NOTES,
-	heartbeat_notes
-};
-
-const song* get_heartbeat_song()
-{
-	return &heartbeat_song;
-}
-
-/************************************************************************/
-/* Hearbeat end                                                         */
-/************************************************************************/
-
-
 /************************************************************************/
 /* Mii start                                                            */
 /************************************************************************/
@@ -637,7 +610,7 @@ const song* get_pokemon_center_song()
 /************************************************************************/
 /* Petalburg start                                                      */
 /************************************************************************/
-#define PETALBURG_NR_NOTES 116
+#define PETALBURG_NR_NOTES 108
 
 const note petalburg_notes[PETALBURG_NR_NOTES] PROGMEM = {
 	{A_S_TONE, Middel_Octave, 8, 1},
@@ -717,13 +690,13 @@ const note petalburg_notes[PETALBURG_NR_NOTES] PROGMEM = {
 	{A_S_TONE, Middel_Octave, 8, 1},
 	{0, 0, 8, 4},
 	{A_S_TONE, Middel_Octave, 8, 1},
-	{C_TONE, Middel_Octave, 8, 1},
-	{C_S_TONE, Middel_Octave, 8, 1},
+	{C_TONE, Middel_Octave + 1, 8, 1},
+	{C_S_TONE, Middel_Octave + 1, 8, 1},
 		
-	{C_TONE, Middel_Octave, 8, 1},
+	{C_TONE, Middel_Octave + 1, 8, 1},
 	{0, 0, 8, 4},
 	{G_TONE, Middel_Octave, 8, 1},
-	{C_TONE, Middel_Octave, 8, 1},
+	{C_TONE, Middel_Octave + 1, 8, 1},
 	{G_TONE, Middel_Octave, 8, 1},
 	
 	{G_S_TONE, Middel_Octave, 8, 1},
@@ -732,14 +705,39 @@ const note petalburg_notes[PETALBURG_NR_NOTES] PROGMEM = {
 	{G_TONE, Middel_Octave, 8, 1},
 	{G_S_TONE, Middel_Octave, 8, 1},
 	
-	
-	
-	{G_TONE, Middel_Octave, 16, 3},
-	{A_S_TONE, Middel_Octave, 16, 1},
+	{A_S_TONE, Middel_Octave, 8, 1},
 	{0, 0, 8, 1},
-	{D_S_TONE, Middel_Octave + 1, 8, 1},
-	{G_TONE, Middel_Octave, 2, 1},
+	{G_S_TONE, Middel_Octave, 8, 1},
+	{0, 0, 8, 1},
+	{G_TONE, Middel_Octave, 8, 1},
+	{F_TONE, Middel_Octave, 4, 1},
+	{D_S_TONE, Middel_Octave, 8, 1},
+		
+	{C_TONE, Middel_Octave + 2, 2, 1},
+	{0, 0, 8, 1},
+	{C_TONE, Middel_Octave + 2, 8, 1},
+	{D_TONE, Middel_Octave + 2, 8, 1},
+	{D_S_TONE, Middel_Octave + 2, 8, 1},
+		
+	{D_TONE, Middel_Octave + 2, 2, 1},
+	{0, 0, 8, 1},
+	{G_TONE, Middel_Octave + 1, 8, 1},
+	{A_S_TONE, Middel_Octave + 1, 8, 1},
+	{C_TONE, Middel_Octave + 2, 8, 1},
 	
+	{G_S_TONE, Middel_Octave + 1, 2, 1},
+	{0, 0, 8, 1},
+	{G_S_TONE, Middel_Octave + 1, 8, 1},
+	{F_TONE, Middel_Octave + 1, 8, 1},
+	{G_S_TONE, Middel_Octave + 1, 8, 1},
+		
+	{F_TONE, Middel_Octave + 1, 4, 1},
+	{G_TONE, Middel_Octave + 1, 4, 1},
+	{G_S_TONE, Middel_Octave + 1, 16, 3},
+	{G_TONE, Middel_Octave + 1, 16, 3},
+	{F_TONE, Middel_Octave + 1, 16, 2},
+			
+	{D_S_TONE, Middel_Octave + 1, 1, 1}
 };
 
 const song petalburg_song = {
@@ -755,144 +753,4 @@ const song* get_petalburg_song()
 
 /************************************************************************/
 /* Petalburg end                                                        */
-/************************************************************************/
-
-/************************************************************************/
-/* Test start                                                           */
-/************************************************************************/
-#define TEST_NR_NOTES 116
-
-const note test_notes[TEST_NR_NOTES] PROGMEM = {
-	
-	{C_TONE, Middel_Octave - 4, 4, 1},
-	{C_S_TONE, Middel_Octave - 4, 4, 1},
-	{D_TONE, Middel_Octave - 4, 4, 1},
-	{D_S_TONE, Middel_Octave - 4, 4, 1},
-	{E_TONE, Middel_Octave - 4, 4, 1},
-	{F_TONE, Middel_Octave - 4, 4, 1},
-	{F_S_TONE, Middel_Octave - 4, 4, 1},
-	{G_TONE, Middel_Octave - 4, 4, 1},
-	{G_S_TONE, Middel_Octave - 4, 4, 1},
-	{A_TONE, Middel_Octave - 4, 4, 1},
-	{A_S_TONE, Middel_Octave - 4, 4, 1},
-	{B_TONE, Middel_Octave - 4, 4, 1},
-	{0, 0, 1, 1},
-	{C_TONE, Middel_Octave - 3, 4, 1},
-	{C_S_TONE, Middel_Octave - 3, 4, 1},
-	{D_TONE, Middel_Octave - 3, 4, 1},
-	{D_S_TONE, Middel_Octave - 3, 4, 1},
-	{E_TONE, Middel_Octave - 3, 4, 1},
-	{F_TONE, Middel_Octave - 3, 4, 1},
-	{F_S_TONE, Middel_Octave - 3, 4, 1},
-	{G_TONE, Middel_Octave - 3, 4, 1},
-	{G_S_TONE, Middel_Octave - 3, 4, 1},
-	{A_TONE, Middel_Octave - 3, 4, 1},
-	{A_S_TONE, Middel_Octave - 3, 4, 1},
-	{B_TONE, Middel_Octave - 3, 4, 1},
-	{0, 0, 1, 1},
-	{C_TONE, Middel_Octave - 2, 4, 1},
-	{C_S_TONE, Middel_Octave - 2, 4, 1},
-	{D_TONE, Middel_Octave - 2, 4, 1},
-	{D_S_TONE, Middel_Octave - 2, 4, 1},
-	{E_TONE, Middel_Octave - 2, 4, 1},
-	{F_TONE, Middel_Octave - 2, 4, 1},
-	{F_S_TONE, Middel_Octave - 2, 4, 1},
-	{G_TONE, Middel_Octave - 2, 4, 1},
-	{G_S_TONE, Middel_Octave - 2, 4, 1},
-	{A_TONE, Middel_Octave - 2, 4, 1},
-	{A_S_TONE, Middel_Octave - 2, 4, 1},
-	{B_TONE, Middel_Octave - 2, 4, 1},
-	{0, 0, 1, 1},
-	{C_TONE, Middel_Octave - 1, 4, 1},
-	{C_S_TONE, Middel_Octave - 1, 4, 1},
-	{D_TONE, Middel_Octave - 1, 4, 1},
-	{D_S_TONE, Middel_Octave - 1, 4, 1},
-	{E_TONE, Middel_Octave - 1, 4, 1},
-	{F_TONE, Middel_Octave - 1, 4, 1},
-	{F_S_TONE, Middel_Octave - 1, 4, 1},
-	{G_TONE, Middel_Octave - 1, 4, 1},
-	{G_S_TONE, Middel_Octave - 1, 4, 1},
-	{A_TONE, Middel_Octave - 1, 4, 1},
-	{A_S_TONE, Middel_Octave - 1, 4, 1},
-	{B_TONE, Middel_Octave - 1, 4, 1},
-	{0, 0, 1, 1},
-	{C_TONE, Middel_Octave, 4, 1},
-	{C_S_TONE, Middel_Octave, 4, 1},
-	{D_TONE, Middel_Octave, 4, 1},
-	{D_S_TONE, Middel_Octave, 4, 1},
-	{E_TONE, Middel_Octave, 4, 1},
-	{F_TONE, Middel_Octave, 4, 1},
-	{F_S_TONE, Middel_Octave, 4, 1},
-	{G_TONE, Middel_Octave, 4, 1},
-	{G_S_TONE, Middel_Octave, 4, 1},
-	{A_TONE, Middel_Octave, 4, 1},
-	{A_S_TONE, Middel_Octave, 4, 1},
-	{B_TONE, Middel_Octave, 4, 1},
-	{0, 0, 1, 1},
-	{C_TONE, Middel_Octave + 1, 4, 1},
-	{C_S_TONE, Middel_Octave + 1, 4, 1},
-	{D_TONE, Middel_Octave + 1, 4, 1},
-	{D_S_TONE, Middel_Octave + 1, 4, 1},
-	{E_TONE, Middel_Octave + 1, 4, 1},
-	{F_TONE, Middel_Octave + 1, 4, 1},
-	{F_S_TONE, Middel_Octave + 1, 4, 1},
-	{G_TONE, Middel_Octave + 1, 4, 1},
-	{G_S_TONE, Middel_Octave + 1, 4, 1},
-	{A_TONE, Middel_Octave + 1, 4, 1},
-	{A_S_TONE, Middel_Octave + 1, 4, 1},
-	{B_TONE, Middel_Octave + 1, 4, 1},
-	{0, 0, 1, 1},
-	{C_TONE, Middel_Octave + 2, 4, 1},
-	{C_S_TONE, Middel_Octave + 2, 4, 1},
-	{D_TONE, Middel_Octave + 2, 4, 1},
-	{D_S_TONE, Middel_Octave + 2, 4, 1},
-	{E_TONE, Middel_Octave + 2, 4, 1},
-	{F_TONE, Middel_Octave + 2, 4, 1},
-	{F_S_TONE, Middel_Octave + 2, 4, 1},
-	{G_TONE, Middel_Octave + 2, 4, 1},
-	{G_S_TONE, Middel_Octave + 2, 4, 1},
-	{A_TONE, Middel_Octave + 2, 4, 1},
-	{A_S_TONE, Middel_Octave + 2, 4, 1},
-	{B_TONE, Middel_Octave + 2, 4, 1},
-	{0, 0, 1, 1},
-	{C_TONE, Middel_Octave + 3, 4, 1},
-	{C_S_TONE, Middel_Octave + 3, 4, 1},
-	{D_TONE, Middel_Octave + 3, 4, 1},
-	{D_S_TONE, Middel_Octave + 3, 4, 1},
-	{E_TONE, Middel_Octave + 3, 4, 1},
-	{F_TONE, Middel_Octave + 3, 4, 1},
-	{F_S_TONE, Middel_Octave + 3, 4, 1},
-	{G_TONE, Middel_Octave + 3, 4, 1},
-	{G_S_TONE, Middel_Octave + 3, 4, 1},
-	{A_TONE, Middel_Octave + 3, 4, 1},
-	{A_S_TONE, Middel_Octave + 3, 4, 1},
-	{B_TONE, Middel_Octave + 3, 4, 1},
-	{0, 0, 1, 1},
-	{C_TONE, Middel_Octave + 4, 4, 1},
-	{C_S_TONE, Middel_Octave + 4, 4, 1},
-	{D_TONE, Middel_Octave + 4, 4, 1},
-	{D_S_TONE, Middel_Octave + 4, 4, 1},
-	{E_TONE, Middel_Octave + 4, 4, 1},
-	{F_TONE, Middel_Octave + 4, 4, 1},
-	{F_S_TONE, Middel_Octave + 4, 4, 1},
-	{G_TONE, Middel_Octave + 4, 4, 1},
-	{G_S_TONE, Middel_Octave + 4, 4, 1},
-	{A_TONE, Middel_Octave + 4, 4, 1},
-	{A_S_TONE, Middel_Octave + 4, 4, 1},
-	{B_TONE, Middel_Octave + 4, 4, 1}
-};
-
-const song test_song = {
-	SONG_CALC_PACE(40),
-	TEST_NR_NOTES,
-	test_notes
-};
-
-const song* get_test_song()
-{
-	return &test_song;
-}
-
-/************************************************************************/
-/* Test end                                                             */
 /************************************************************************/

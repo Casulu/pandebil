@@ -5,7 +5,7 @@
 uint16_t srf02_timer;
 
 /*
- * Triggers a supersonic puls from a SRF02.
+ * Triggers a supersonic pulls from a SRF02.
  */
 void srf02_trigger(uint8_t srf02)
 {

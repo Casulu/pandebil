@@ -175,5 +175,5 @@ bool drive_register_registers()
 void drive_register_backtrack()
 {
 	register_entries = false;
-	drive_register_add_entry(); //Adds the last
+	drive_register_add_entry(); //Adds the last registered speeds
 }

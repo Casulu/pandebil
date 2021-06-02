@@ -82,8 +82,8 @@ int main(void)
 	uint8_t len = 0;
 	uint16_t distance_front = 0;
 	uint16_t distance_back = 0;
-	/*srf02_trigger(SRF_FRONT);
-	srf02_trigger(SRF_BACK);*/
+	srf02_trigger(SRF_FRONT);
+	srf02_trigger(SRF_BACK);
 	srf02_timer_reset();
     while (1) 
     {
@@ -93,12 +93,10 @@ int main(void)
 	    //Every 70ms recieve data from the range sensor and send another sound wave.
 		if (srf02_timer_alarm() == true)
 		{
-			/*distance_front = srf02_read(SRF_FRONT);
+			distance_front = srf02_read(SRF_FRONT);
 			distance_back = srf02_read(SRF_BACK);
 			srf02_trigger(SRF_FRONT);
-			srf02_trigger(SRF_BACK);*/
-			distance_front = 40;
-			distance_back = 40;
+			srf02_trigger(SRF_BACK);
 			srf02_timer_reset();
 		}
 		
@@ -269,14 +267,6 @@ void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args)
 			break;
 			case 'B':
 			song_set(get_petalburg_song());
-			song_start();
-			break;
-			case 'C':
-			song_set(get_heartbeat_song());
-			song_start();
-			break;
-			case 'D':
-			song_set(get_test_song());
 			song_start();
 			break;
 		}
