@@ -3,15 +3,15 @@
 #include <util/delay.h>
 #include "piezo.h"
 
-char piezo_calc_ocr(float tone, char multiplier);
-int pace_ms;
+uint16_t piezo_calc_ocr(float tone, uint8_t multiplier);
+uint16_t pace_ms;
 
 /*
- * Initiates the piezo buzzer with OC2B.
+ * Initiates the piezo buzzer with OC1A.
  */
 void piezo_init()
 {
-	TCCR1A = (1<<COM0A0);
+	TCCR1A = (1<<COM1A0);
 	TCCR1B |= (1<<WGM12);
 	DDRB &=~ (1<<DDB1);
 }
@@ -20,7 +20,7 @@ void piezo_init()
  * Sets the pace, must be set to play notes or delays in different lengths.
  * Takes number of bars per minute to calculate the length of a whole note in ms.
  */
-void piezo_set_pace(int bars_per_min)
+void piezo_set_pace(uint16_t bars_per_min)
 {
 	pace_ms = 60000/bars_per_min;
 }
@@ -32,7 +32,7 @@ void piezo_set_pace(int bars_per_min)
  * The tone input represents the tone and takes frequency for the middle octave.
  * The number input is to be able to play a tone for ex. three quarter notes without interrupt.
  */
-void piezo_play_tone(float tone, char octave, char note, char number)
+void piezo_play_tone(float tone, uint8_t octave, uint8_t note, uint8_t number)
 {
 	piezo_play_tone_continous(tone, octave);
 	piezo_delay(number * (pace_ms/note) - 1);
@@ -44,7 +44,7 @@ void piezo_play_tone(float tone, char octave, char note, char number)
  * Sets a silent delay. The note input tells the length.
  * Ex. if the note parameter is 4 it will be silent in the length of a quarter note.
  */
-void piezo_pause(char note)
+void piezo_pause(uint8_t note)
 {
 	piezo_stop(pace_ms/note);
 	piezo_delay(pace_ms/note);
@@ -55,9 +55,9 @@ void piezo_pause(char note)
  * The octave input represent the octave.
  * The tone input represents the tone and takes frequency for the middle octave.
  */
-void piezo_play_tone_continous(float tone, char octave)
+void piezo_play_tone_continous(float tone, uint8_t octave)
 {
-	/* Sets TCCR2B and multiplier to get the right tone to the correct octave. */
+	/* Sets TCCR1B and multiplier to get the right tone to the correct octave. */
 	int multiplier;
 	switch(octave)
 	{
@@ -127,7 +127,7 @@ void piezo_play_tone_continous(float tone, char octave)
 /*
  * Sets a delay for the piezo.
  */
-void piezo_delay(int delay)
+void piezo_delay(uint16_t delay)
 {
 	for (int i = 0; i < delay; i++)
 	{
@@ -153,9 +153,9 @@ void piezo_stop()
 /*
  * Calculates the OCR value to get correct frequency.
  */
-char piezo_calc_ocr(float tone, char multiplier)
+uint16_t piezo_calc_ocr(float tone, uint8_t multiplier)
 {
-	return (char)round((double)((F_CPU/(2*128*tone))*multiplier-1));
+	return (uint16_t)round((double)((F_CPU/(2*128*tone))*multiplier-1));
 }
 
 /*

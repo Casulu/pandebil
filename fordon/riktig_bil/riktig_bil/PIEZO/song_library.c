@@ -1,270 +1,898 @@
 #include "song.h"
+#include "piezo.h"
+#include <avr/pgmspace.h>
 
-void set_imperial_march();
-void set_halo_theme();
-void set_soviet_anthem();
-void set_mario();
-void set_allstars();
-void set_mii();
-void set_cantina_band();
+/************************************************************************/
+/* Super Mario Melodi start                                             */
+/************************************************************************/
+#define MARIO_NR_NOTES 12
 
-void set_cantina_band()
+const note mario_notes[MARIO_NR_NOTES] PROGMEM = {
+	{E_TONE, Middel_Octave + 1, 8, 1},
+	{E_TONE, Middel_Octave + 1, 8, 1},
+	{0, 0, 8, 1},
+	{E_TONE, Middel_Octave + 1, 8, 1},
+	{0, 0, 8, 1},
+	{C_TONE, Middel_Octave + 1, 8, 1},
+	{E_TONE, Middel_Octave + 1, 8, 1},
+	{0, 0, 8, 1},
+	{G_TONE, Middel_Octave + 1, 8, 1},
+	{0, 0, 4, 1},
+	{0, 0, 8, 1},
+	{G_TONE, Middel_Octave, 8, 1}
+};
+
+const song mario_song = {
+	SONG_CALC_PACE(50),
+	MARIO_NR_NOTES,
+	mario_notes
+};
+
+const song* get_mario_song()
 {
-	song_empty(61, 62);
-	
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave + 1, 4, 1, false);
-	
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(G_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	
-	song_add_note(A_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(G_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(0, 0, 8, 1, true);
-	song_add_note(F_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(F_S_TONE, Middel_Octave, 8, 1, false);
-	
-	song_add_note(F_TONE, Middel_Octave, 2, 1, false);
-	song_add_note(D_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(0, 0, 4, 1, true);
-	
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave + 1, 4, 1, false);
-	
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(G_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(F_S_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
-	
-	song_add_note(C_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(A_S_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
-	
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave + 1, 4, 1, false);
-	
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(G_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	
-	song_add_note(C_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(C_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
-	
-	song_add_note(F_TONE, Middel_Octave, 2, 1, false);
-	song_add_note(D_TONE, Middel_Octave, 2, 1, false);
-	
-	song_add_note(D_TONE, Middel_Octave, 2, 1, false);
-	song_add_note(F_TONE, Middel_Octave, 2, 1, false);
-	
-	song_add_note(A_TONE, Middel_Octave, 2, 1, false);
-	song_add_note(C_TONE, Middel_Octave + 1, 2, 1, false);
-	
-	song_add_note(D_S_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(G_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(F_TONE, Middel_Octave, 8, 1, false);
-	
+	return &mario_song;
 }
 
-void set_soviet_anthem()
+/************************************************************************/
+/* Super Mario Melodi end                                               */
+/************************************************************************/
+
+
+/************************************************************************/
+/* Hearbeat start                                                       */
+/************************************************************************/
+
+#define HEARTBEAT_NR_NOTES 1
+
+const note heartbeat_notes[HEARTBEAT_NR_NOTES] PROGMEM = {
+	{C_TONE, Middel_Octave + 1, 8, 1}
+};
+
+const song heartbeat_song = {
+	SONG_CALC_PACE(62),
+	HEARTBEAT_NR_NOTES,
+	heartbeat_notes
+};
+
+const song* get_heartbeat_song()
 {
-	song_empty(25, 17);
-	
-	song_add_note(C_TONE, Middel_Octave + 1, 4, 3, false);
-	song_add_note(0, 0, 8, 1, true);
-	song_add_note(G_TONE, Middel_Octave, 8, 1, false);
-	
-	song_add_note(C_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 16, 3, false);
-	song_add_note(A_TONE, Middel_Octave, 16, 1, false);
-	song_add_note(B_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(E_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(E_TONE, Middel_Octave, 8, 1, false);
-	
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 16, 3, false);
-	song_add_note(F_TONE, Middel_Octave, 16, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(C_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(C_TONE, Middel_Octave, 8, 1, false);
-	
-	song_add_note(D_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave, 16, 3, false);
-	song_add_note(E_TONE, Middel_Octave, 16, 1, false);
-	song_add_note(F_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(F_TONE, Middel_Octave, 16, 3, false);
-	song_add_note(G_TONE, Middel_Octave, 16, 1, false);
-	
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(B_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(C_TONE, Middel_Octave + 1, 8, 1, false);
-	song_add_note(D_TONE, Middel_Octave + 1, 8, 3, false);
-	song_add_note(G_TONE, Middel_Octave, 8, 1, false);
+	return &heartbeat_song;
 }
 
-void set_imperial_march()
+/************************************************************************/
+/* Hearbeat end                                                         */
+/************************************************************************/
+
+
+/************************************************************************/
+/* Mii start                                                            */
+/************************************************************************/
+#define MII_NR_NOTES 29
+
+const note mii_notes[MII_NR_NOTES] PROGMEM = {
+	{F_S_TONE, Middel_Octave, 4, 1},
+	{A_TONE, Middel_Octave, 8, 1},
+	{C_S_TONE, Middel_Octave + 1, 8, 1},
+	{0, 0, 8, 1},
+	{A_TONE, Middel_Octave, 8, 1},
+	{0, 0, 8, 1},
+	{F_S_TONE, Middel_Octave, 8, 1},
+	{D_TONE, Middel_Octave, 32, 3},
+	{0, 0, 32, 1},
+	{D_TONE, Middel_Octave, 32, 3},
+	{0, 0, 32, 1},
+	{D_TONE, Middel_Octave, 32, 3},
+	{0, 0, 32, 1},
+	{0, 0, 8, 1},
+	{0, 0, 8, 1},
+	{0, 0, 4, 1},
+	{0, 0, 8, 1},
+	{C_S_TONE, Middel_Octave, 8, 1},
+	{D_TONE, Middel_Octave, 8, 1,},
+	{F_S_TONE, Middel_Octave, 8, 1},
+	{A_TONE, Middel_Octave, 8, 1},
+	{C_S_TONE, Middel_Octave + 1, 8, 1},
+	{0, 0, 8, 1},
+	{A_TONE, Middel_Octave, 8, 1},
+	{0, 0, 8, 1},
+	{F_S_TONE, Middel_Octave, 8, 1},
+	{E_TONE, Middel_Octave + 1, 8, 3},
+	{D_S_TONE, Middel_Octave + 1, 8, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1}
+};
+
+const song mii_song = {
+	SONG_CALC_PACE(28),
+	MII_NR_NOTES,
+	mii_notes
+};
+
+const song* get_mii_song()
 {
-	song_empty(17, 27);
-	
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(D_S_TONE, Middel_Octave, 16, 3, false);
-	song_add_note(A_S_TONE, Middel_Octave, 16, 1, false);
-	
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(D_S_TONE, Middel_Octave, 16, 3, false);
-	song_add_note(A_S_TONE, Middel_Octave, 16, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 2, 1, false);
-	
-	song_add_note(D_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(D_S_TONE, Middel_Octave + 1, 16, 3, false);
-	song_add_note(A_S_TONE, Middel_Octave, 16, 1, false);
-	
-	song_add_note(F_S_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(D_S_TONE, Middel_Octave, 16, 3, false);
-	song_add_note(A_S_TONE, Middel_Octave, 16, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
+	return &mii_song;
 }
 
-void set_halo_theme()
+/************************************************************************/
+/* Mii end                                                              */
+/************************************************************************/
+
+
+/************************************************************************/
+/* Allstars start                                                       */
+/************************************************************************/
+#define ALLSTARS_NR_NOTES 14
+
+const note allstars_notes[ALLSTARS_NR_NOTES] PROGMEM = {
+	{F_S_TONE, Middel_Octave, 4, 1},
+	{C_S_TONE, Middel_Octave + 1, 8, 1},
+	{A_S_TONE, Middel_Octave, 8, 1},
+	{A_S_TONE, Middel_Octave, 4, 1},
+	{G_S_TONE, Middel_Octave, 8, 1},
+	{F_S_TONE, Middel_Octave, 8, 1},
+	{F_S_TONE, Middel_Octave, 8, 1},
+	{B_TONE, Middel_Octave, 4, 1},
+	{A_S_TONE, Middel_Octave, 8, 1},
+	{A_S_TONE, Middel_Octave, 8, 1},
+	{G_S_TONE, Middel_Octave, 8, 1},
+	{G_S_TONE, Middel_Octave, 8, 1},
+	{F_S_TONE, Middel_Octave, 4, 1},
+	{F_S_TONE, Middel_Octave, 8, 1}
+};
+
+const song allstars_song = {
+	SONG_CALC_PACE(25),
+	ALLSTARS_NR_NOTES,
+	allstars_notes
+};
+
+const song* get_allstars_song()
 {
-	song_empty(28, 25);
-	
-	song_add_note(E_TONE, Middel_Octave, 2, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(F_S_TONE, Middel_Octave, 4, 1, false);
-	
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(F_S_TONE, Middel_Octave, 2, 1, false);
-	
-	song_add_note(E_TONE, Middel_Octave, 1, 1, false);
-	
-	song_add_note(0, 0, 2, 1, true);
-	song_add_note(B_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(C_S_TONE, Middel_Octave + 1, 4, 1, false);
-	
-	song_add_note(D_TONE, Middel_Octave + 1, 2, 1, false);
-	song_add_note(C_S_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	
-	song_add_note(C_S_TONE, Middel_Octave + 1, 4, 1, false);
-	song_add_note(B_TONE, Middel_Octave, 4, 3, false);
-	
-	song_add_note(0, 0, 4, 1, true);
-	song_add_note(B_TONE, Middel_Octave - 1, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(E_TONE, Middel_Octave, 4, 1, false);
-	
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(F_S_TONE, Middel_Octave, 2, 1, false);
-	
-	song_add_note(E_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(G_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(F_S_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(E_TONE, Middel_Octave, 4, 1, false);
-	
-	song_add_note(F_S_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(D_TONE, Middel_Octave, 4, 3, false);
-	song_add_note(E_TONE, Middel_Octave, 2, 1, false);
+	return &allstars_song;
 }
 
-void set_mario()
-{
-	song_empty(12, 50);
+/************************************************************************/
+/* Allstars end                                                         */
+/************************************************************************/
+
+
+/************************************************************************/
+/* Halo theme start                                                     */
+/************************************************************************/
+#define HALO_THEME_NR_NOTES 29
+
+const note halo_theme_notes[HALO_THEME_NR_NOTES] PROGMEM = {
 	
-	song_add_note(E_TONE, Middel_Octave + 1, 8, 1, false);
-	song_add_note(E_TONE, Middel_Octave + 1, 8, 1, false);
-	song_add_note(0.0f, 0, 8, 1, true);
-	song_add_note(E_TONE, Middel_Octave + 1, 8, 1, false);
-	song_add_note(0.0f, 0, 8, 1, true);
-	song_add_note(C_TONE, Middel_Octave + 1, 8, 1, false);
-	song_add_note(E_TONE, Middel_Octave + 1, 8, 1, false);
-	song_add_note(0.0f, 0, 8, 1, true);
-	song_add_note(G_TONE, Middel_Octave + 1, 8, 1, false);
-	song_add_note(0.0f, 0, 4, 1, true);
-	song_add_note(0.0f, 0, 8, 1, true);
-	song_add_note(G_TONE, Middel_Octave, 8, 1, false);
+	{E_TONE, Middel_Octave, 2, 1},
+	{G_TONE, Middel_Octave, 4, 1},
+	{F_S_TONE, Middel_Octave, 4, 1},
+	
+	{A_TONE, Middel_Octave, 4, 1},
+	{G_TONE, Middel_Octave, 4, 1},
+	{F_S_TONE, Middel_Octave, 2, 1},
+	
+	{E_TONE, Middel_Octave, 1, 1},
+	
+	{0, 0, 2, 1},
+	{B_TONE, Middel_Octave, 4, 1},
+	{C_S_TONE, Middel_Octave + 1, 4, 1},
+	
+	{D_TONE, Middel_Octave + 1, 2, 1},
+	{C_S_TONE, Middel_Octave + 1, 4, 1},
+	{A_TONE, Middel_Octave, 4, 1},
+	
+	{C_S_TONE, Middel_Octave + 1, 4, 1},
+	{B_TONE, Middel_Octave, 4, 3},
+	
+	{0, 0, 4, 1},
+	{B_TONE, Middel_Octave - 1, 4, 1},
+	{D_TONE, Middel_Octave, 4, 1},
+	{E_TONE, Middel_Octave, 4, 1},
+	
+	{G_TONE, Middel_Octave, 4, 1},
+	{A_TONE, Middel_Octave, 4, 1},
+	{F_S_TONE, Middel_Octave, 2, 1},
+	
+	{E_TONE, Middel_Octave, 4, 1},
+	{G_TONE, Middel_Octave, 4, 1},
+	{F_S_TONE, Middel_Octave, 4, 1},
+	{E_TONE, Middel_Octave, 4, 1},
+	
+	{F_S_TONE, Middel_Octave, 4, 1},
+	{D_TONE, Middel_Octave, 4, 3},
+	{E_TONE, Middel_Octave, 2, 1}
+};
+
+const song halo_theme_song = {
+	SONG_CALC_PACE(29),
+	HALO_THEME_NR_NOTES,
+	halo_theme_notes
+};
+
+const song* get_halo_theme_song()
+{
+	return &halo_theme_song;
 }
 
-void set_allstars()
-{
-	song_empty(14, 25);
+/************************************************************************/
+/* Halo theme end                                                       */
+/************************************************************************/
+
+
+/************************************************************************/
+/* Imperial march start                                                 */
+/************************************************************************/
+#define IMPERIAL_MARCH_NR_NOTES 18
+
+const note imperial_march_notes[IMPERIAL_MARCH_NR_NOTES] PROGMEM = {
 	
-	song_add_note(F_S_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(C_S_TONE, Middel_Octave + 1, 8, 1, false);
-	song_add_note(A_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(A_S_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(G_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(F_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(F_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(B_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(A_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(A_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(G_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(G_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(F_S_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(F_S_TONE, Middel_Octave, 8, 1, false);
+	{G_TONE, Middel_Octave, 4, 1},
+	{G_TONE, Middel_Octave, 4, 1},
+	{G_TONE, Middel_Octave, 4, 1},
+	{D_S_TONE, Middel_Octave, 16, 3},
+	{A_S_TONE, Middel_Octave, 16, 1},
+	
+	{G_TONE, Middel_Octave, 4, 1},
+	{D_S_TONE, Middel_Octave, 16, 3},
+	{A_S_TONE, Middel_Octave, 16, 1},
+	{G_TONE, Middel_Octave, 2, 1},
+	
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	{D_S_TONE, Middel_Octave + 1, 16, 3},
+	{A_S_TONE, Middel_Octave, 16, 1},
+	
+	{F_S_TONE, Middel_Octave, 4, 1},
+	{D_S_TONE, Middel_Octave, 16, 3},
+	{A_S_TONE, Middel_Octave, 16, 1},
+	{G_TONE, Middel_Octave, 4, 1}
+};
+
+const song imperial_march_song = {
+	SONG_CALC_PACE(27),
+	IMPERIAL_MARCH_NR_NOTES,
+	imperial_march_notes
+};
+
+const song* get_imperial_march_song()
+{
+	return &imperial_march_song;
 }
 
-void set_mii()
-{
-	song_empty(28, 29);
+/************************************************************************/
+/* Imperial march end                                                   */
+/************************************************************************/
+
+
+/************************************************************************/
+/* Soviet national anthem start                                         */
+/************************************************************************/
+#define SOVIET_ANTHEM_NR_NOTES 26
+
+const note soviet_anthem_notes[SOVIET_ANTHEM_NR_NOTES] PROGMEM = {
 	
-	song_add_note(F_S_TONE, Middel_Octave, 4, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(C_S_TONE, Middel_Octave + 1, 8, 1, false);
-	song_add_note(0.0f, 0, 8, 1, true);
-	song_add_note(A_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(0.0f, 0, 8, 1, true);
-	song_add_note(F_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(D_TONE, Middel_Octave, 32, 3, false);
-	song_add_note(0.0f, 0, 32, 1, true);
-	song_add_note(D_TONE, Middel_Octave, 32, 3, false);
-	song_add_note(0.0f, 0, 32, 1, true);
-	song_add_note(D_TONE, Middel_Octave, 32, 3, false);
-	song_add_note(0.0f, 0, 8, 1, true);
-	song_add_note(0.0f, 0, 8, 1, true);
-	song_add_note(0.0f, 0, 4, 1, true);
-	song_add_note(0.0f, 0, 8, 1, true);
-	song_add_note(C_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(D_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(F_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(A_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(C_S_TONE, Middel_Octave + 1, 8, 1, false);
-	song_add_note(0.0f, 0, 8, 1, true);
-	song_add_note(A_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(0.0f, 0, 8, 1, true);
-	song_add_note(F_S_TONE, Middel_Octave, 8, 1, false);
-	song_add_note(E_TONE, Middel_Octave + 1, 8, 3, false);
-	song_add_note(D_S_TONE, Middel_Octave + 1, 8, 1, false);
-	song_add_note(D_TONE, Middel_Octave + 1, 4, 1, false);
+	{C_TONE, Middel_Octave + 1, 4, 3},
+	{0, 0, 8, 1},
+	{G_TONE, Middel_Octave, 8, 1},
+	
+	{C_TONE, Middel_Octave + 1, 4, 1},
+	{G_TONE, Middel_Octave, 16, 3},
+	{A_TONE, Middel_Octave, 16, 1},
+	{B_TONE, Middel_Octave, 4, 1},
+	{E_TONE, Middel_Octave, 8, 1},
+	{E_TONE, Middel_Octave, 8, 1},
+	
+	{A_TONE, Middel_Octave, 4, 1},
+	{G_TONE, Middel_Octave, 16, 3},
+	{F_TONE, Middel_Octave, 16, 1},
+	{G_TONE, Middel_Octave, 4, 1},
+	{C_TONE, Middel_Octave, 8, 1},
+	{C_TONE, Middel_Octave, 8, 1},
+	
+	{D_TONE, Middel_Octave, 4, 1},
+	{D_TONE, Middel_Octave, 16, 3},
+	{E_TONE, Middel_Octave, 16, 1},
+	{F_TONE, Middel_Octave, 4, 1},
+	{F_TONE, Middel_Octave, 16, 3},
+	{G_TONE, Middel_Octave, 16, 1},
+	
+	{A_TONE, Middel_Octave, 4, 1},
+	{B_TONE, Middel_Octave, 8, 1},
+	{C_TONE, Middel_Octave + 1, 8, 1},
+	{D_TONE, Middel_Octave + 1, 8, 3},
+	{G_TONE, Middel_Octave, 8, 1}
+};
+
+const song soviet_anthem_song = {
+	SONG_CALC_PACE(17),
+	SOVIET_ANTHEM_NR_NOTES,
+	soviet_anthem_notes
+};
+
+const song* get_soviet_anthem_song()
+{
+	return &soviet_anthem_song;
 }
+
+/************************************************************************/
+/* Soviet national anthem end                                           */
+/************************************************************************/
+
+
+/************************************************************************/
+/* Horn start                                                           */
+/************************************************************************/
+#define HORN_NR_NOTES 3
+
+const note horn_notes[HORN_NR_NOTES] PROGMEM = {
+	{A_TONE, Middel_Octave, 8, 1},
+	{0, 0, 8, 1},
+	{A_TONE, Middel_Octave, 8, 1}
+};
+
+const song horn_song = {
+	SONG_CALC_PACE(62),
+	HORN_NR_NOTES,
+	horn_notes
+};
+
+const song* get_horn_song()
+{
+	return &horn_song;
+}
+
+/************************************************************************/
+/* Horn end                                                             */
+/************************************************************************/
+
+
+/************************************************************************/
+/* Cantina band start                                                   */
+/************************************************************************/
+#define CANTINA_BAND_NR_NOTES 61
+
+const note cantina_band_notes[CANTINA_BAND_NR_NOTES] PROGMEM = {
+	
+	{A_TONE, Middel_Octave, 4, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	{A_TONE, Middel_Octave, 4, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	
+	{A_TONE, Middel_Octave, 4, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	{A_TONE, Middel_Octave, 8, 1},
+	{G_S_TONE, Middel_Octave, 8, 1},
+	{A_TONE, Middel_Octave, 4, 1},
+	
+	{A_TONE, Middel_Octave, 8, 1},
+	{G_S_TONE, Middel_Octave, 8, 1},
+	{A_TONE, Middel_Octave, 8, 1},
+	{G_TONE, Middel_Octave, 8, 1},
+	{0, 0, 8, 1},
+	{F_S_TONE, Middel_Octave, 8, 1},
+	{G_TONE, Middel_Octave, 8, 1},
+	{F_S_TONE, Middel_Octave, 8, 1},
+	
+	{F_TONE, Middel_Octave, 2, 1},
+	{D_TONE, Middel_Octave, 4, 1},
+	{0, 0, 4, 1},
+	
+	{A_TONE, Middel_Octave, 4, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	{A_TONE, Middel_Octave, 4, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	
+	{A_TONE, Middel_Octave, 4, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	{A_TONE, Middel_Octave, 8, 1},
+	{G_S_TONE, Middel_Octave, 8, 1},
+	{A_TONE, Middel_Octave, 4, 1},
+	
+	{G_TONE, Middel_Octave, 4, 1},
+	{G_TONE, Middel_Octave, 4, 1},
+	{F_S_TONE, Middel_Octave, 4, 1},
+	{G_TONE, Middel_Octave, 4, 1},
+	
+	{C_TONE, Middel_Octave + 1, 4, 1},
+	{A_S_TONE, Middel_Octave, 4, 1},
+	{A_TONE, Middel_Octave, 4, 1},
+	{G_TONE, Middel_Octave, 4, 1},
+	
+	{A_TONE, Middel_Octave, 4, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	{A_TONE, Middel_Octave, 4, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	
+	{A_TONE, Middel_Octave, 4, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	{A_TONE, Middel_Octave, 8, 1},
+	{G_S_TONE, Middel_Octave, 8, 1},
+	{A_TONE, Middel_Octave, 4, 1},
+	
+	{C_TONE, Middel_Octave + 1, 4, 1},
+	{C_TONE, Middel_Octave + 1, 4, 1},
+	{A_TONE, Middel_Octave, 4, 1},
+	{G_TONE, Middel_Octave, 4, 1},
+	
+	{F_TONE, Middel_Octave, 2, 1},
+	{D_TONE, Middel_Octave, 2, 1},
+	
+	{D_TONE, Middel_Octave, 2, 1},
+	{F_TONE, Middel_Octave, 2, 1},
+	
+	{A_TONE, Middel_Octave, 2, 1},
+	{C_TONE, Middel_Octave + 1, 2, 1},
+	
+	{D_S_TONE, Middel_Octave + 1, 4, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	{G_S_TONE, Middel_Octave, 8, 1},
+	{A_TONE, Middel_Octave, 4, 1},
+	{F_TONE, Middel_Octave, 8, 1}
+};
+
+const song cantina_band_song = {
+	SONG_CALC_PACE(62),
+	CANTINA_BAND_NR_NOTES,
+	cantina_band_notes
+};
+
+const song* get_cantina_band_song()
+{
+	return &cantina_band_song;
+}
+
+/************************************************************************/
+/* Cantina band end                                                     */
+/************************************************************************/
+
+
+/************************************************************************/
+/* Mario galaxy start                                                   */
+/************************************************************************/
+#define MARIO_GALAXY_NR_NOTES 61
+
+const note mario_galaxy_notes[MARIO_GALAXY_NR_NOTES] PROGMEM = {
+	
+	{F_TONE, Middel_Octave + 1, 8, 5},
+	{E_TONE, Middel_Octave + 1, 8, 1},
+	{G_TONE, Middel_Octave + 1, 8, 1},
+	{F_TONE, Middel_Octave + 1, 8, 1},
+	
+	{C_TONE, Middel_Octave + 1, 8, 5},
+	{A_TONE, Middel_Octave, 8, 1},
+	{A_S_TONE, Middel_Octave, 8, 1},
+	{C_TONE, Middel_Octave + 1, 8, 1},
+	
+	{C_TONE, Middel_Octave + 1, 8, 3},
+	{A_S_TONE, Middel_Octave, 8, 5},
+	
+	{0, 0, 1, 1},
+	
+	{G_TONE, Middel_Octave + 1, 8, 5},
+	{F_S_TONE, Middel_Octave + 1, 8, 1},
+	{A_TONE, Middel_Octave + 1, 8, 1},
+	{G_TONE, Middel_Octave + 1, 8, 1},
+	
+	{F_TONE, Middel_Octave + 1, 8, 3},
+	{E_TONE, Middel_Octave + 1, 4, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	{E_TONE, Middel_Octave + 1, 8, 1},
+	
+	{D_TONE, Middel_Octave + 1, 8, 3},
+	{C_TONE, Middel_Octave + 1, 8, 5},
+	
+	{0, 0, 1, 1},
+	
+	{C_TONE, Middel_Octave + 2, 8, 5},
+	{B_TONE, Middel_Octave + 1, 8, 1},
+	{D_TONE, Middel_Octave + 2, 8, 1},
+	{C_TONE, Middel_Octave + 2, 8, 1},
+	
+	{A_S_TONE, Middel_Octave + 1, 8, 3},
+	{A_TONE, Middel_Octave + 1, 8, 5},
+	
+	{A_S_TONE, Middel_Octave + 1, 8, 5},
+	{A_TONE, Middel_Octave + 1, 8, 1},
+	{C_TONE, Middel_Octave + 2, 8, 1},
+	{A_S_TONE, Middel_Octave + 1, 8, 1},
+		
+	{A_TONE, Middel_Octave + 1, 8, 3},
+	{G_TONE, Middel_Octave + 1, 8, 5},
+	
+	{A_TONE, Middel_Octave + 1, 8, 5},
+	{G_S_TONE, Middel_Octave + 1, 8, 1},
+	{A_S_TONE, Middel_Octave + 1, 8, 1},
+	{A_TONE, Middel_Octave + 1, 8, 1},
+	
+	{G_TONE, Middel_Octave + 1, 8, 3},
+	{F_TONE, Middel_Octave + 1, 8, 2},
+	{A_TONE, Middel_Octave + 1, 4, 1},
+	{G_TONE, Middel_Octave + 1, 8, 1},
+	
+	{F_TONE, Middel_Octave + 1, 8, 3},
+	{E_TONE, Middel_Octave + 1, 8, 5},
+	
+	{F_TONE, Middel_Octave + 1, 8, 3},
+	{G_TONE, Middel_Octave + 1, 8, 5},
+};
+
+const song mario_galaxy_song = {
+	SONG_CALC_PACE(38),
+	MARIO_GALAXY_NR_NOTES,
+	mario_galaxy_notes
+};
+
+const song* get_mario_galaxy_song()
+{
+	return &mario_galaxy_song;
+}
+
+/************************************************************************/
+/* Mario galaxy end                                                     */
+/************************************************************************/
+
+/************************************************************************/
+/* Pokemon center start                                                 */
+/************************************************************************/
+#define POKEMON_CENTER_NR_NOTES 65
+
+const note pokemon_center_notes[POKEMON_CENTER_NR_NOTES] PROGMEM = {
+	{D_TONE, Middel_Octave + 1, 8, 1},
+	{A_TONE, Middel_Octave, 8, 1},
+	{D_TONE, Middel_Octave + 1, 8, 1},
+	{A_TONE, Middel_Octave + 1, 4, 1},
+	{G_TONE, Middel_Octave + 1, 4, 1},
+	{F_S_TONE, Middel_Octave + 1, 8, 1},
+		
+	{E_TONE, Middel_Octave + 1, 8, 1},
+	{C_S_TONE, Middel_Octave + 1, 8, 3},
+	{0, 0, 2, 1},
+	
+	{C_S_TONE, Middel_Octave + 1, 8, 1},
+	{A_TONE, Middel_Octave, 8, 1},
+	{C_S_TONE, Middel_Octave + 1, 8, 1},
+	{F_S_TONE, Middel_Octave + 1, 4, 1},
+	{E_TONE, Middel_Octave + 1, 4, 1},
+	{C_S_TONE, Middel_Octave + 1, 8, 1},
+	
+	{D_TONE, Middel_Octave + 1, 8, 1},
+	{F_S_TONE, Middel_Octave + 1, 8, 3},
+	{0, 0, 2, 1},
+	
+	{D_TONE, Middel_Octave + 1, 8, 1},
+	{A_TONE, Middel_Octave, 8, 1},
+	{D_TONE, Middel_Octave + 1, 8, 1},
+	{A_TONE, Middel_Octave + 1, 4, 1},
+	{G_TONE, Middel_Octave + 1, 4, 1},
+	{F_S_TONE, Middel_Octave + 1, 8, 1},
+	
+	{E_TONE, Middel_Octave + 1, 8, 1},
+	{C_S_TONE, Middel_Octave + 1, 8, 3},
+	{0, 0, 2, 1},
+	
+	{C_S_TONE, Middel_Octave + 1, 8, 1},
+	{A_TONE, Middel_Octave, 8, 1},
+	{C_S_TONE, Middel_Octave + 1, 8, 1},
+	{F_S_TONE, Middel_Octave + 1, 4, 1},
+	{E_TONE, Middel_Octave + 1, 4, 1},
+	{C_S_TONE, Middel_Octave + 1, 8, 1},
+	
+	{D_TONE, Middel_Octave + 1, 2, 1},
+	{0, 0, 2, 1},
+	
+	{F_S_TONE, Middel_Octave + 1, 2, 1},
+	{A_TONE, Middel_Octave + 1, 2, 1},
+	
+	{G_TONE, Middel_Octave + 1, 8, 1},
+	{A_TONE, Middel_Octave + 1, 8, 1},
+	{G_TONE, Middel_Octave + 1, 8, 1},
+	{F_S_TONE, Middel_Octave + 1, 8, 1},
+	{E_TONE, Middel_Octave + 1, 2, 1},
+	
+	{C_S_TONE, Middel_Octave + 1, 2, 1},
+	{E_TONE, Middel_Octave + 1, 2, 1},
+	
+	{F_S_TONE, Middel_Octave + 1, 8, 1},
+	{G_TONE, Middel_Octave + 1, 8, 1},
+	{F_S_TONE, Middel_Octave + 1, 8, 1},
+	{E_TONE, Middel_Octave + 1, 8, 1},
+	{D_TONE, Middel_Octave + 1, 2, 1},
+	
+	{F_S_TONE, Middel_Octave + 1, 2, 1},
+	{A_TONE, Middel_Octave + 1, 2, 1},
+	
+	{G_TONE, Middel_Octave + 1, 8, 1},
+	{F_S_TONE, Middel_Octave + 1, 8, 1},
+	{G_TONE, Middel_Octave + 1, 8, 1},
+	{A_TONE, Middel_Octave + 1, 8, 1},
+	{B_TONE, Middel_Octave + 1, 2, 1},
+	
+	{A_TONE, Middel_Octave + 1, 4, 1},
+	{G_TONE, Middel_Octave + 1, 8, 1},
+	{F_S_TONE, Middel_Octave + 1, 8, 1},
+	{G_TONE, Middel_Octave + 1, 2, 1},
+	
+	{F_S_TONE, Middel_Octave + 1, 8, 1},
+	{G_TONE, Middel_Octave + 1, 8, 1},
+	{F_S_TONE, Middel_Octave + 1, 8, 1},
+	{E_TONE, Middel_Octave + 1, 8, 1},
+	{D_TONE, Middel_Octave + 1, 2, 1},
+};
+
+const song pokemon_center_song = {
+	SONG_CALC_PACE(33),
+	POKEMON_CENTER_NR_NOTES,
+	pokemon_center_notes
+};
+
+const song* get_pokemon_center_song()
+{
+	return &pokemon_center_song;
+}
+
+/************************************************************************/
+/* Pokemon center end                                                   */
+/************************************************************************/
+
+/************************************************************************/
+/* Petalburg start                                                      */
+/************************************************************************/
+#define PETALBURG_NR_NOTES 116
+
+const note petalburg_notes[PETALBURG_NR_NOTES] PROGMEM = {
+	{A_S_TONE, Middel_Octave, 8, 1},
+	{0, 0, 8, 1},
+	{C_TONE, Middel_Octave + 1, 8, 1},
+	{0, 0, 8, 1},
+	{D_TONE, Middel_Octave + 1, 16, 3},
+	{D_S_TONE, Middel_Octave + 1, 16, 3},
+	{F_TONE, Middel_Octave + 1, 16, 2},
+	
+	{D_S_TONE, Middel_Octave + 1, 16, 3},
+	{0, 0, 16, 1},
+	{D_S_TONE, Middel_Octave + 1, 16, 1},
+	{F_TONE, Middel_Octave + 1, 16, 1},
+	{D_S_TONE, Middel_Octave + 1, 8, 1},
+	{D_TONE, Middel_Octave + 1, 16, 3},
+	{0, 0, 16, 1},
+	{D_TONE, Middel_Octave + 1, 16, 1},
+	{D_S_TONE, Middel_Octave + 1, 16, 1},
+	{D_TONE, Middel_Octave + 1, 8, 1},
+	
+	{C_TONE, Middel_Octave + 1, 2, 1},
+	{0, 0, 8, 1},
+	{F_TONE, Middel_Octave + 1, 8, 1},
+	{G_S_TONE, Middel_Octave + 1, 8, 1},
+	{F_TONE, Middel_Octave + 1, 8, 1},
+	
+	{F_TONE, Middel_Octave + 1, 16, 3},
+	{0, 0, 16, 1},
+	{F_TONE, Middel_Octave + 1, 16, 1},
+	{G_TONE, Middel_Octave + 1, 16, 1},
+	{G_S_TONE, Middel_Octave + 1, 8, 1},
+	{C_TONE, Middel_Octave + 1, 16, 3},
+	{0, 0, 16, 1},
+	{C_TONE, Middel_Octave + 1, 16, 1},
+	{D_TONE, Middel_Octave + 1, 16, 1},
+	{D_S_TONE, Middel_Octave + 1, 8, 1},
+	
+	{D_TONE, Middel_Octave + 1, 8, 3},
+	{C_TONE, Middel_Octave + 1, 8, 1},
+	{A_S_TONE, Middel_Octave, 2, 1},
+	
+	{G_TONE, Middel_Octave + 1, 16, 3},
+	{0, 0, 16, 1},
+	{G_TONE, Middel_Octave + 1, 16, 1},
+	{G_S_TONE, Middel_Octave + 1, 16, 1},
+	{G_TONE, Middel_Octave + 1, 8, 1},
+	{F_TONE, Middel_Octave + 1, 16, 3},
+	{0, 0, 16, 1},
+	{F_TONE, Middel_Octave + 1, 16, 1},
+	{G_TONE, Middel_Octave + 1, 16, 1},
+	{F_TONE, Middel_Octave + 1, 8, 1},
+	
+	{D_S_TONE, Middel_Octave + 1, 2, 1},
+	{0, 0, 8, 1},
+	{A_S_TONE, Middel_Octave, 8, 1},
+	{D_S_TONE, Middel_Octave + 1, 8, 1},
+	{A_S_TONE, Middel_Octave + 1, 8, 1},
+	
+	{G_S_TONE, Middel_Octave + 1, 16, 3},
+	{0, 0, 16, 1},
+	{G_S_TONE, Middel_Octave + 1, 16, 1},
+	{A_S_TONE, Middel_Octave + 1, 16, 1},
+	{G_S_TONE, Middel_Octave + 1, 8, 1},
+	{G_TONE, Middel_Octave + 1, 16, 3},
+	{0, 0, 16, 1},
+	{G_TONE, Middel_Octave + 1, 16, 1},
+	{G_S_TONE, Middel_Octave + 1, 16, 1},
+	{G_TONE, Middel_Octave + 1, 8, 1},
+	
+	{C_S_TONE, Middel_Octave + 1, 8, 3},
+	{D_S_TONE, Middel_Octave + 1, 8, 1},
+	{F_TONE, Middel_Octave + 1, 4, 1},
+	{G_TONE, Middel_Octave, 8, 1},
+	{G_S_TONE, Middel_Octave, 8, 1},
+	
+	{A_S_TONE, Middel_Octave, 8, 1},
+	{0, 0, 8, 4},
+	{A_S_TONE, Middel_Octave, 8, 1},
+	{C_TONE, Middel_Octave, 8, 1},
+	{C_S_TONE, Middel_Octave, 8, 1},
+		
+	{C_TONE, Middel_Octave, 8, 1},
+	{0, 0, 8, 4},
+	{G_TONE, Middel_Octave, 8, 1},
+	{C_TONE, Middel_Octave, 8, 1},
+	{G_TONE, Middel_Octave, 8, 1},
+	
+	{G_S_TONE, Middel_Octave, 8, 1},
+	{0, 0, 8, 4},
+	{G_S_TONE, Middel_Octave, 8, 1},
+	{G_TONE, Middel_Octave, 8, 1},
+	{G_S_TONE, Middel_Octave, 8, 1},
+	
+	
+	
+	{G_TONE, Middel_Octave, 16, 3},
+	{A_S_TONE, Middel_Octave, 16, 1},
+	{0, 0, 8, 1},
+	{D_S_TONE, Middel_Octave + 1, 8, 1},
+	{G_TONE, Middel_Octave, 2, 1},
+	
+};
+
+const song petalburg_song = {
+	SONG_CALC_PACE(33),
+	PETALBURG_NR_NOTES,
+	petalburg_notes
+};
+
+const song* get_petalburg_song()
+{
+	return &petalburg_song;
+}
+
+/************************************************************************/
+/* Petalburg end                                                        */
+/************************************************************************/
+
+/************************************************************************/
+/* Test start                                                           */
+/************************************************************************/
+#define TEST_NR_NOTES 116
+
+const note test_notes[TEST_NR_NOTES] PROGMEM = {
+	
+	{C_TONE, Middel_Octave - 4, 4, 1},
+	{C_S_TONE, Middel_Octave - 4, 4, 1},
+	{D_TONE, Middel_Octave - 4, 4, 1},
+	{D_S_TONE, Middel_Octave - 4, 4, 1},
+	{E_TONE, Middel_Octave - 4, 4, 1},
+	{F_TONE, Middel_Octave - 4, 4, 1},
+	{F_S_TONE, Middel_Octave - 4, 4, 1},
+	{G_TONE, Middel_Octave - 4, 4, 1},
+	{G_S_TONE, Middel_Octave - 4, 4, 1},
+	{A_TONE, Middel_Octave - 4, 4, 1},
+	{A_S_TONE, Middel_Octave - 4, 4, 1},
+	{B_TONE, Middel_Octave - 4, 4, 1},
+	{0, 0, 1, 1},
+	{C_TONE, Middel_Octave - 3, 4, 1},
+	{C_S_TONE, Middel_Octave - 3, 4, 1},
+	{D_TONE, Middel_Octave - 3, 4, 1},
+	{D_S_TONE, Middel_Octave - 3, 4, 1},
+	{E_TONE, Middel_Octave - 3, 4, 1},
+	{F_TONE, Middel_Octave - 3, 4, 1},
+	{F_S_TONE, Middel_Octave - 3, 4, 1},
+	{G_TONE, Middel_Octave - 3, 4, 1},
+	{G_S_TONE, Middel_Octave - 3, 4, 1},
+	{A_TONE, Middel_Octave - 3, 4, 1},
+	{A_S_TONE, Middel_Octave - 3, 4, 1},
+	{B_TONE, Middel_Octave - 3, 4, 1},
+	{0, 0, 1, 1},
+	{C_TONE, Middel_Octave - 2, 4, 1},
+	{C_S_TONE, Middel_Octave - 2, 4, 1},
+	{D_TONE, Middel_Octave - 2, 4, 1},
+	{D_S_TONE, Middel_Octave - 2, 4, 1},
+	{E_TONE, Middel_Octave - 2, 4, 1},
+	{F_TONE, Middel_Octave - 2, 4, 1},
+	{F_S_TONE, Middel_Octave - 2, 4, 1},
+	{G_TONE, Middel_Octave - 2, 4, 1},
+	{G_S_TONE, Middel_Octave - 2, 4, 1},
+	{A_TONE, Middel_Octave - 2, 4, 1},
+	{A_S_TONE, Middel_Octave - 2, 4, 1},
+	{B_TONE, Middel_Octave - 2, 4, 1},
+	{0, 0, 1, 1},
+	{C_TONE, Middel_Octave - 1, 4, 1},
+	{C_S_TONE, Middel_Octave - 1, 4, 1},
+	{D_TONE, Middel_Octave - 1, 4, 1},
+	{D_S_TONE, Middel_Octave - 1, 4, 1},
+	{E_TONE, Middel_Octave - 1, 4, 1},
+	{F_TONE, Middel_Octave - 1, 4, 1},
+	{F_S_TONE, Middel_Octave - 1, 4, 1},
+	{G_TONE, Middel_Octave - 1, 4, 1},
+	{G_S_TONE, Middel_Octave - 1, 4, 1},
+	{A_TONE, Middel_Octave - 1, 4, 1},
+	{A_S_TONE, Middel_Octave - 1, 4, 1},
+	{B_TONE, Middel_Octave - 1, 4, 1},
+	{0, 0, 1, 1},
+	{C_TONE, Middel_Octave, 4, 1},
+	{C_S_TONE, Middel_Octave, 4, 1},
+	{D_TONE, Middel_Octave, 4, 1},
+	{D_S_TONE, Middel_Octave, 4, 1},
+	{E_TONE, Middel_Octave, 4, 1},
+	{F_TONE, Middel_Octave, 4, 1},
+	{F_S_TONE, Middel_Octave, 4, 1},
+	{G_TONE, Middel_Octave, 4, 1},
+	{G_S_TONE, Middel_Octave, 4, 1},
+	{A_TONE, Middel_Octave, 4, 1},
+	{A_S_TONE, Middel_Octave, 4, 1},
+	{B_TONE, Middel_Octave, 4, 1},
+	{0, 0, 1, 1},
+	{C_TONE, Middel_Octave + 1, 4, 1},
+	{C_S_TONE, Middel_Octave + 1, 4, 1},
+	{D_TONE, Middel_Octave + 1, 4, 1},
+	{D_S_TONE, Middel_Octave + 1, 4, 1},
+	{E_TONE, Middel_Octave + 1, 4, 1},
+	{F_TONE, Middel_Octave + 1, 4, 1},
+	{F_S_TONE, Middel_Octave + 1, 4, 1},
+	{G_TONE, Middel_Octave + 1, 4, 1},
+	{G_S_TONE, Middel_Octave + 1, 4, 1},
+	{A_TONE, Middel_Octave + 1, 4, 1},
+	{A_S_TONE, Middel_Octave + 1, 4, 1},
+	{B_TONE, Middel_Octave + 1, 4, 1},
+	{0, 0, 1, 1},
+	{C_TONE, Middel_Octave + 2, 4, 1},
+	{C_S_TONE, Middel_Octave + 2, 4, 1},
+	{D_TONE, Middel_Octave + 2, 4, 1},
+	{D_S_TONE, Middel_Octave + 2, 4, 1},
+	{E_TONE, Middel_Octave + 2, 4, 1},
+	{F_TONE, Middel_Octave + 2, 4, 1},
+	{F_S_TONE, Middel_Octave + 2, 4, 1},
+	{G_TONE, Middel_Octave + 2, 4, 1},
+	{G_S_TONE, Middel_Octave + 2, 4, 1},
+	{A_TONE, Middel_Octave + 2, 4, 1},
+	{A_S_TONE, Middel_Octave + 2, 4, 1},
+	{B_TONE, Middel_Octave + 2, 4, 1},
+	{0, 0, 1, 1},
+	{C_TONE, Middel_Octave + 3, 4, 1},
+	{C_S_TONE, Middel_Octave + 3, 4, 1},
+	{D_TONE, Middel_Octave + 3, 4, 1},
+	{D_S_TONE, Middel_Octave + 3, 4, 1},
+	{E_TONE, Middel_Octave + 3, 4, 1},
+	{F_TONE, Middel_Octave + 3, 4, 1},
+	{F_S_TONE, Middel_Octave + 3, 4, 1},
+	{G_TONE, Middel_Octave + 3, 4, 1},
+	{G_S_TONE, Middel_Octave + 3, 4, 1},
+	{A_TONE, Middel_Octave + 3, 4, 1},
+	{A_S_TONE, Middel_Octave + 3, 4, 1},
+	{B_TONE, Middel_Octave + 3, 4, 1},
+	{0, 0, 1, 1},
+	{C_TONE, Middel_Octave + 4, 4, 1},
+	{C_S_TONE, Middel_Octave + 4, 4, 1},
+	{D_TONE, Middel_Octave + 4, 4, 1},
+	{D_S_TONE, Middel_Octave + 4, 4, 1},
+	{E_TONE, Middel_Octave + 4, 4, 1},
+	{F_TONE, Middel_Octave + 4, 4, 1},
+	{F_S_TONE, Middel_Octave + 4, 4, 1},
+	{G_TONE, Middel_Octave + 4, 4, 1},
+	{G_S_TONE, Middel_Octave + 4, 4, 1},
+	{A_TONE, Middel_Octave + 4, 4, 1},
+	{A_S_TONE, Middel_Octave + 4, 4, 1},
+	{B_TONE, Middel_Octave + 4, 4, 1}
+};
+
+const song test_song = {
+	SONG_CALC_PACE(40),
+	TEST_NR_NOTES,
+	test_notes
+};
+
+const song* get_test_song()
+{
+	return &test_song;
+}
+
+/************************************************************************/
+/* Test end                                                             */
+/************************************************************************/

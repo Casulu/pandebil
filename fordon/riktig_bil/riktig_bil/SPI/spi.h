@@ -6,6 +6,6 @@
 #define SCK 5
 
 void spi_master_init(void);
-void spi_master_transmit(char data);
+void spi_master_transmit(uint8_t data);
 
 #endif /* SPI_H_ */

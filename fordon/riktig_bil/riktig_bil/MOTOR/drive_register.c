@@ -4,117 +4,176 @@
 #include "drive_register.h"
 #include "motor.h"
 
-struct drive_register
-{
-	struct drive_register_entry* top;
-	struct drive_register_entry* bottom;
-	struct drive_register_entry* temp;
-	bool register_entries;
-	uint8_t time;
-};
+#define BUFF 500
 
 struct drive_entry
 {
 	int8_t speed_l;
 	int8_t speed_r;
-	bool motor_forward_lock;
-	bool motor_backward_lock;
-	uint16_t time;
+	uint8_t time;
 };
 
-drive_register *drive_register_empty()
+struct drive_entry drive_register[BUFF];
+
+bool register_entries;
+bool entry_registered;
+bool end_backtrack;
+uint8_t time;
+uint16_t end_entry;
+uint16_t current_entry;
+uint16_t prev_entry;
+
+/*
+ * Initializes the drive register. Can be used as reset.
+ */
+void drive_register_init()
 {
-	drive_register *d = calloc(1, sizeof(*d));
-	
-	d->time = 0;
-	d->bottom = NULL;
-	d->top = d->bottom;
-	d->register_entries = true;
-	
-	return d;
+	register_entries = true;
+	entry_registered = false;
+	time = 0;
+	end_entry = 0;
+	current_entry = 0;
+	prev_entry = 0;
+	end_backtrack = true;
 }
 
-void drive_register_register_entry(drive_register* d, int8_t speed_l, int8_t speed_r, bool motor_forward_lock, bool motor_backward_lock)
+/*
+ * Registers speed thats not standing still.
+ */
+void drive_register_register_entry(int8_t speed_l, int8_t speed_r)
 {
-	d->temp = calloc(1, sizeof(struct drive_register_entry));
-	d->temp->speed_l = speed_l;
-	d->temp->speed_r = speed_r;
-	d->temp->motor_forward_lock = motor_forward_lock;
-	d->temp->motor_backward_lock = motor_backward_lock;
-	d->temp->prev = d->top;
-}
-
-void drive_register_add_entry(drive_register* d)
-{
-	if (d->temp != NULL)
+	if (speed_l != 0 || speed_r != 0)
 	{
-		drive_register_entry* de = d->temp;
-		de->time = d->time;
-		d->time = 0;
-		d->top = de;
-		d->temp = NULL;
+		drive_register[current_entry].speed_l = speed_l;
+		drive_register[current_entry].speed_r = speed_r;
+		entry_registered = true;
 	}
 }
 
-void drive_register_pop(drive_register* d)
+/*
+ * If there is a registered speed. Register time and add go to the next entry in circular buffer.
+ */
+void drive_register_add_entry()
 {
-	motor_forward_set_lock(d->top->motor_forward_lock);
-	motor_backward_set_lock(d->top->motor_backward_lock);
-	motors_set_speed(-d->top->speed_l, -d->top->speed_r);
-	struct drive_register_entry* de = d->top;
-	d->top = de->prev;
-	free(de);
+	if (entry_registered == true)
+	{
+		drive_register[current_entry].time = time;
+		prev_entry = current_entry;
+		
+		//Move one step in circular buffer. Both for current entry and if needed end entry.
+		if (current_entry == BUFF - 1)
+		{
+			if (end_entry == 0)
+			{
+				end_entry++;
+			}
+			current_entry = 0;
+		}
+		else
+		{
+			if (end_entry == current_entry + 1)
+			{
+				if (end_entry == BUFF - 1)
+				{
+					end_entry = 0;
+				}
+				else
+				{
+					end_entry++;
+				}
+			}
+			current_entry++;
+		}
+		
+		//Note that registered speed have been added.
+		time = 0;
+		entry_registered = false;
+		end_backtrack = false;
+	}
 }
 
-void drive_register_tick(drive_register* d)
+/*
+ * Assigns the speed of the current entry to the motors and assigns the time.
+ * Also moves to the previous entry in the circular buffer.
+ */
+void drive_register_pop()
 {
-	if (d->register_entries == true)
+	motors_set_speed(-drive_register[current_entry].speed_l, -drive_register[current_entry].speed_r);
+	time = drive_register[current_entry].time;
+	if (current_entry == 0)
 	{
-		if (d->top != NULL)
+		current_entry = BUFF - 1;
+	}
+	else
+	{
+		current_entry--;
+	}
+}
+
+/*
+ * Function that does time sensitive things. It counts in millisecond the time between motor input changes.
+ * Also count how long each input should stay when backtracking. Should run on a 1kHz timer.
+ */
+void drive_register_tick()
+{
+	if (register_entries == true)
+	{
+		if (entry_registered == true)
 		{
-			d->time++;
-			if (d->time == 0xffff)
+			time++;
+			if (time == 0xff)
 			{
-				drive_register_add_entry(d);
-				drive_register_register_entry(d, d->top->speed_l, d->top->speed_r, d->top->motor_forward_lock, d->top->motor_backward_lock);
+				drive_register_add_entry();
+				drive_register_register_entry(drive_register[prev_entry].speed_l, drive_register[prev_entry].speed_r);
 			}
 		}
 		else
 		{
-			d->time = 0;
+			time = 0;
 		}
 	}
 	else
 	{
-		if (d->time == 0)
+		if (time != 0)
 		{
-			if (d->top != NULL)
+			time--;
+		}
+		
+		if (time == 0)
+		{
+			if (end_backtrack == false)
 			{
-				d->time = d->top->time;
-				drive_register_pop(d);
+				if (current_entry == end_entry)
+				{
+					end_backtrack = true;
+				}
+				drive_register_pop();
 			}
 			else
 			{
-				d->register_entries = true;
+				drive_register_init();
 				motors_set_speed(0, 0);
 				motor_set_lock(false);
 				motor_forward_set_lock(false);
 				motor_backward_set_lock(false);
 			}
 		}
-		else
-		{
-			d->time--;
-		}
 	}
 }
 
-bool drive_register_registers(drive_register* d)
+/*
+ * Returns if the register registers.
+ */
+bool drive_register_registers()
 {
-	return d->register_entries;
+	return register_entries;
 }
 
-void drive_register_backtrack(drive_register* d)
+/*
+ * Sets drive register to not register and backtrack.
+ */
+void drive_register_backtrack()
 {
-	d->register_entries = false;
+	register_entries = false;
+	drive_register_add_entry(); //Adds the last
 }
