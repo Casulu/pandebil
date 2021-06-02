@@ -20,28 +20,33 @@
 #include "util/music.h"
 #include "util/messages.h"
 
-#define BTN_DDR DDRD
-#define BTN_PORT PORTD
-#define BTN_PIN PIND
+/*I/O-defines*/
 #define HONKBTN 3
 #define EXTRABTN 2
 #define DEADMANBTN 4
 #define GAMEBTN 6
+#define HALFSWITCH ?
 #define LED_DDR DDRD
 #define LED_PORT PORTD
 #define LEDG 5
 #define LEDR1 6
 #define LEDR2 7
+
+/*Static positions for text on main screen*/
 #define FRONT_POS 5
 #define BACK_POS 20
 #define CL_POS 30
 #define CR_POS 31
 #define PIR_POS 15
+
+/*Counter values for timer*/
 #define CMD_DELAY 20
 #define DEBOUNCE_VAL 20
-#define TIMEOUT_VAL 5000
+#define INVITE_TIMEOUT_VAL 5000 /*ms*/
+#define PUNISH_TIMEOUT_VAL 600	/*s*/
 #define MOVE_DELAY_VAL 45
 
+/*Music defines*/
 #define NUM_SONGS 5
 #define MAX_SONG_LEN 256
 #define HONK_SONG 0
@@ -50,31 +55,29 @@
 #define GERUDO_SONG 3
 #define UNTITLED_SONG 4
 
+/*Modes*/
 #define MAIN_MODE 0
 #define FIR_MODE 1
 
-#define SETBIT(x, y) ((x) |= (1<<(y)))		//Sets bit y on port x
-#define CLEARBIT(x, y) ((x) &= ~(1<<(y)))	//Clears bit y on port x
-#define CHANGEBIT(x, y, z) {\
-				if(z) SETBIT(x, y);\
-				else CLEARBIT(x, y);\
-			}
-#define DEADMAN_PRESSED (!(BTN_PIN & 1<<DEADMANBTN))
+#define DEADMAN_PRESSED (!(PIND & 1<<DEADMANBTN))
 #define GAMEBTN_PRESSED (!(PINB & 1<<GAMEBTN))
+//#define HALFSWITCH_TOGGLED (!(PINB & 1<<HALFSWITCH))
 
-void timer_init();
-void btn_init();
-void led_init();
-void do_normal_actions();
-void do_fir_actions();
-void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args);
-void process_fir_command(volatile uint8_t* args);
-void display_sensors();
-void print_lcd_static();
-void send_move_command();
-void enter_main_mode();
+void timer_init();																/*Initiate the 100Hz timer*/
+void btn_init();																/*Initiate buttons and INT0, INT1 for interrupts*/
+void led_init();																/*Initiate LED ports*/
+void do_main_actions();															/*Perform actions for main mode*/
+void do_fir_actions();															/*Perform actions for fir mode*/
+void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args);	/*Use incoming MQTT command to perform corresponding action*/
+void process_fir_command(volatile uint8_t* args);								/*Check current state program and handle five in a row command accordingly*/
+void draw_five_map();															/*Draws the current five in a row map to the LCD*/
+void display_sensors();															/*Draws the current sensor values from the vehicle to the LCD*/
+void print_lcd_static();														/*Prints the static text for the main screen to the LCD*/
+void send_move_command();														/*Calculate wheel speeds from accelerometer and send corresponding command to vehicle*/
+void enter_main_mode();															/*Enter program main mode*/
+void enter_fir_mode();															/*Enter program fir mode*/
 
-static const uint8_t melodies[NUM_SONGS][MAX_SONG_LEN+2] PROGMEM = {
+const uint8_t melodies[NUM_SONGS][MAX_SONG_LEN+2] PROGMEM = {
 	{ // Basic Honk
 		180, 0x71, 0x80, 0x71, 0x00
 	},
@@ -93,13 +96,23 @@ static const uint8_t melodies[NUM_SONGS][MAX_SONG_LEN+2] PROGMEM = {
 		0x8a, 0x48, 0x61, 0x80, 0x81, 0x28, 0x4a, 0x4c, 0x2d, 0x6d, 0
 	},
 	{ //Amogus
-		100, 0x8D, 0x80, 0x90, 0x80, 0x92, 0x80, 0x93, 0x80, 0x92, 0x80, 0x90, 0x80, 0x8D, 0x40, 0x80, 0x8B, 0x8F, 0x8D, 0
+		100, 0x8D, 0x80, 0x90, 0x80, 0x92, 0x80, 0x93, 0x80, 0x92, 0x80, 0x90, 
+		0x80, 0x8D, 0x40, 0x80, 0x8B, 0x8F, 0x8D, 0
 	},
 	{//Gerudo
-		100, 0x80, 0x83, 0x88, 0x8a, 0x6b, 0x80, 0x83, 0x88, 0x8a, 0x6b, 0x60, 0x80, 0x80, 0x84, 0x88, 0x8a, 0x6b, 0x80, 0x84, 0x88, 0x8a, 0x6b, 0x80, 0x81, 0x86, 0x88, 0x6a, 0x80, 0x81, 0x86, 0x88, 0x6a, 0x60, 0x80, 0x80, 0x88, 0x8a, 0x88, 0x67, 0
+		100, 0x80, 0x83, 0x88, 0x8a, 0x6b, 0x80, 0x83, 0x88, 0x8a, 0x6b, 0x60, 
+		0x80, 0x80, 0x84, 0x88, 0x8a, 0x6b, 0x80, 0x84, 0x88, 0x8a, 0x6b, 0x80, 
+		0x81, 0x86, 0x88, 0x6a, 0x80, 0x81, 0x86, 0x88, 0x6a, 0x60, 0x80, 0x80, 
+		0x88, 0x8a, 0x88, 0x67, 0
 	},
 	{ //Untitled - Simple Plan
-		96, 0x60, 0x6e, 0xe0, 0x6e, 0xe0, 0x6e, 0x72, 0x73, 0x72, 0x73, 0x53, 0x60, 0x6e, 0x72, 0x73, 0x72, 0x73, 0x53, 0x60, 0x6e, 0x72, 0x73, 0x72, 0x73, 0x53, 0x60, 0x6e, 0x73, 0xe0, 0x73, 0x60, 0x53, 0x72, 0x60, 0x72, 0xe0, 0x52, 0xe0, 0x72, 0x73, 0x72, 0x73, 0x60, 0x6e, 0x72, 0x73, 0x72, 0x73, 0x53, 0x60, 0x6e, 0x72, 0x73, 0xe0, 0x73, 0xe0, 0x73, 0x33, 0x53, 0x40, 0x60, 0x6e, 0xe0, 0x6e, 0xe0, 0x6e, 0x60, 0x72, 0x73, 0x72, 0x73, 0x53, 0
+		96, 0x60, 0x6e, 0xe0, 0x6e, 0xe0, 0x6e, 0x72, 0x73, 0x72, 0x73, 0x53, 
+		0x60, 0x6e, 0x72, 0x73, 0x72, 0x73, 0x53, 0x60, 0x6e, 0x72, 0x73, 0x72, 
+		0x73, 0x53, 0x60, 0x6e, 0x73, 0xe0, 0x73, 0x60, 0x53, 0x72, 0x60, 0x72, 
+		0xe0, 0x52, 0xe0, 0x72, 0x73, 0x72, 0x73, 0x60, 0x6e, 0x72, 0x73, 0x72, 
+		0x73, 0x53, 0x60, 0x6e, 0x72, 0x73, 0xe0, 0x73, 0xe0, 0x73, 0x33, 0x53, 
+		0x40, 0x60, 0x6e, 0xe0, 0x6e, 0xe0, 0x6e, 0x60, 0x72, 0x73, 0x72, 0x73, 
+		0x53, 0
 	}
 };
 
@@ -115,7 +128,10 @@ volatile uint8_t fir_cursor_move_delay = MOVE_DELAY_VAL;
 volatile uint8_t heart_hundreths = 0;
 volatile uint8_t move_command_hundreths = 0;
 volatile uint8_t honk_debounce_hundreths = DEBOUNCE_VAL;
-volatile uint16_t invite_timeout_hundreths = 0;
+volatile uint8_t calibration_debounce_hundreths = DEBOUNCE_VAL;
+volatile uint16_t invite_cooldown_hundreths = 0;
+volatile uint8_t punished_timout_hundreths = 100;
+volatile uint16_t punished_timout_seconds = PUNISH_TIMEOUT_VAL;
 
 /*Sensor data buffer*/
 volatile char sensor_buf[16];
@@ -125,6 +141,7 @@ volatile bool sensors_received = false;
 volatile uint16_t x_rest = 512; /*Typical resting values for prototype controller*/
 volatile uint16_t y_rest = 501; 
 volatile uint16_t z_rest = 633;
+
 /*Stores last outputs*/
 int16_t last_left = 0;
 int16_t last_right = 0;
@@ -140,7 +157,6 @@ volatile bool punished = false;
 volatile uint8_t game_over = 0;
 char placebuf[5];
 char row_buf[49];
-
 
 int main(void)
 {
@@ -161,7 +177,7 @@ int main(void)
     {
 		switch(program_mode){
 			case MAIN_MODE:
-				do_normal_actions();
+				do_main_actions();
 				break;
 			case FIR_MODE:
 				do_fir_actions();
@@ -245,7 +261,7 @@ void enter_fir_mode(){
 	}
 }
 
-void do_normal_actions(){
+void do_main_actions(){
 	/*If a game has been prompted, draw prompt screen if not drawn and poll for accept*/
 	if(game_prompted){
 		if(redraw){
@@ -288,7 +304,7 @@ void do_normal_actions(){
 				uart_send_line("341");
 				LED_PORT |= 1<<LEDG;
 			}
-			send_move_command();
+			if(move_command_hundreths == CMD_DELAY) /*If no cooldown*/ send_move_command();
 		} else if(LED_PORT & (1<<LEDG)){ /*If button is not pressed AND LED indicating dms is on*/
 			uart_send_line("040"); /*Send deadman off to car*/
 			uart_send_line("340"); /*Send deadman off to rem2*/
@@ -297,12 +313,12 @@ void do_normal_actions(){
 		
 		if(GAMEBTN_PRESSED){
 			if(DEADMAN_PRESSED){
-				if(gamebtn_last != GAMEBTN_PRESSED) uart_send_line("08"); /*Return car to home*/;
+				if(gamebtn_last != GAMEBTN_PRESSED) uart_send_line("080"); /*Return car to home*/;
 			} else if(!request_sent){ /*If button is pressed and no request is waiting, send game request*/
 				uart_send_line("33."); /*Game request to rem2. '.' < '0'*/
 				messages_force("Invitation sent");
 				request_sent = true;
-				invite_timeout_hundreths = 0;
+				invite_cooldown_hundreths = 0;
 			}
 			gamebtn_last = 1;
 		} else gamebtn_last = 0;
@@ -311,69 +327,50 @@ void do_normal_actions(){
 }
 
 void send_move_command(){
-	if(move_command_hundreths == CMD_DELAY){ /*If no cooldown*/
-		int16_t x_diff = x_rest - read_avg_adc(1, 25);
-		int16_t y_diff = y_rest - read_avg_adc(2, 25);
-		int16_t left = x_diff+y_diff;
-		int16_t right = x_diff-y_diff;
-		/*Keep values within bounds*/
-		if(left > 127){
-			left = 127;
-		}
-		else if(left < -127){
-			left = -127;
-		} else if(left > -5 && left < 5) left = 0;
-		
-		if(right > 127) {
-			right = 127;
-		}
-		else if(right < -127){
-			right = -127;
-		} else if(right > -5 && right < 5) right = 0;
-		
-		/*Ignore duplicate values*/
-		if(left != last_left || right != last_right){
-			/*Build output string*/
-			itoa(left, itoabuf+2, 10);
-			uint8_t len = strlen(itoabuf);
-			itoabuf[len++] = ' ';
-			itoa(right, itoabuf+len, 10);
-			/*Send string*/
-			uart_send_line(itoabuf);
-			move_command_hundreths = 0; /*Reset cooldown*/
-		}
-		last_left = left;
-		last_right = right;
+	
+	int16_t x_diff = x_rest - read_avg_adc(1, 25);
+	int16_t y_diff = y_rest - read_avg_adc(2, 25);
+	int16_t left = x_diff+y_diff;
+	int16_t right = x_diff-y_diff;
+	/*Keep values within bounds*/
+	if(left > 127){
+		left = 127;
 	}
+	else if(left < -127){
+		left = -127;
+	} else if(left > -5 && left < 5) left = 0;
+		
+	if(right > 127) {
+		right = 127;
+	}
+	else if(right < -127){
+		right = -127;
+	} else if(right > -5 && right < 5) right = 0;
+	
+	/*if(HALFSWITCH_TOGGLED){
+		left = left/2;
+		right = right/2;
+	}*/
+	/*Ignore duplicate values*/
+	if(left != last_left || right != last_right){
+		/*Build output string*/
+		itoa(left, itoabuf+2, 10);
+		uint8_t len = strlen(itoabuf);
+		itoabuf[len++] = ' ';
+		itoa(right, itoabuf+len, 10);
+		/*Send string*/
+		uart_send_line(itoabuf);
+		move_command_hundreths = 0; /*Reset cooldown*/
+	}
+	last_left = left;
+	last_right = right;
 }
 
 void print_lcd_static(){
 	set_cursor_pos(0);
-	write_lcd_string("Fram: __cm PIR:_");
+	write_lcd_string("Fram: ??cm PIR:?");
 	set_cursor_pos(16);
-	write_lcd_string("Bak: __cm  C: __");
-}
-
-ISR(TIMER2_COMPA_vect){
-	/*Toggles heartbeat LED back on every half second to produce a blinking effect
-	  when heartbeat is active*/
-	if(++heart_hundreths > 50){
-		LED_PORT |= 1<<LEDR2;
-		heart_hundreths = 0;
-	}
-	/*Cooldown for sending move commands to vehicle*/
-	if(move_command_hundreths < CMD_DELAY) move_command_hundreths++;
-	/*Cooldown for honk button to reduce debounce*/
-	if(honk_debounce_hundreths > 0) honk_debounce_hundreths--;
-	/*Timout for sending game invitations*/
-	if(request_sent && invite_timeout_hundreths < TIMEOUT_VAL) invite_timeout_hundreths++;
-	else{
-		request_sent = false;
-		invite_timeout_hundreths = 0;
-	}
-	if(fir_cursor_move_delay > 0) fir_cursor_move_delay--;
-	/*Timer proc for messages module*/
-	messages_timerproc();
+	write_lcd_string("Bak: ??cm  C: ??");
 }
 
 void timer_init(){
@@ -416,9 +413,9 @@ void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args){
 				case '4': /*Received deadman info from rem2*/
 					/*Set lamp to correspond with opponents deadman switch*/
 					if(args[0] == '1'){
-						SETBIT(LED_PORT, LEDR1);
+						LED_PORT |= 1<<LEDR1;
 					} else{
-						CLEARBIT(LED_PORT, LEDR1);
+						LED_PORT &= ~(1<<LEDR1);
 						/*Clear punished state when rem2 releases deadmans switch*/
 						punished = false;
 					}
@@ -438,6 +435,9 @@ void process_fir_command(volatile uint8_t* args){
 					music_play_note(NOTE(G_PITCH, 2, SIXTEENTH_NOTE), 100);
 					if(fiveinarow_check_win()){
 						game_over = 2; /*Mark game as over and lost*/
+						punished = true;
+						punished_timout_hundreths = 100;
+						punished_timout_seconds = PUNISH_TIMEOUT_VAL;
 						music_play_song_pgm(melodies[UNTITLED_SONG]);
 					}
 					redraw = true;
@@ -507,31 +507,68 @@ ISR(USART_RX_vect){
 }
 
 void btn_init(){
-	BTN_DDR &= ~((1<<HONKBTN)|(1<<DEADMANBTN)|(1<<EXTRABTN));
-	BTN_PORT |= (1<<HONKBTN)|(1<<DEADMANBTN)|(1<<EXTRABTN);
+	DDRD &= ~((1<<HONKBTN)|(1<<DEADMANBTN)|(1<<EXTRABTN));
+	PORTD |= (1<<HONKBTN)|(1<<DEADMANBTN)|(1<<EXTRABTN);
 	DDRB &= ~(1<<GAMEBTN);
 	PORTB |= 1<<GAMEBTN;
 	EICRA = (2<<ISC00)|(2<<ISC10);
 	EIMSK = 3;
 }
 
-//Extra
-ISR(INT0_vect){
-	if(program_mode == FIR_MODE){
-		enter_main_mode("Game canceled");
-		uart_send_line("33A");
-		punished = true;
-	} else{
-		if(game_prompted){
-			game_prompted = false;
-			redraw = true;
-		} else if((BTN_PIN & 1<<DEADMANBTN) && (read_adc(0) > z_rest-5)){ /*If deadmans is not pressed and device is flat*/
-			z_rest = read_avg_adc(0, 25);
-			x_rest = read_avg_adc(1, 25);
-			y_rest = read_avg_adc(2, 25);
+ISR(TIMER2_COMPA_vect){
+	/*Toggles heartbeat LED back on every half second to produce a blinking effect
+	  when heartbeat is active*/
+	if(++heart_hundreths > 50){
+		LED_PORT |= 1<<LEDR2;
+		heart_hundreths = 0;
+	}
+	/*Cooldown for sending move commands to vehicle*/
+	if(move_command_hundreths < CMD_DELAY) move_command_hundreths++;
+	/*Cooldown for honk button to reduce debounce*/
+	if(honk_debounce_hundreths > 0) honk_debounce_hundreths--;
+	/*Cooldown for honk button to reduce debounce*/
+	if(calibration_debounce_hundreths > 0) calibration_debounce_hundreths--;
+	/*Cooldown for sending game invitations*/
+	if(request_sent && invite_cooldown_hundreths < INVITE_TIMEOUT_VAL) invite_cooldown_hundreths++;
+	else{
+		request_sent = false;
+		invite_cooldown_hundreths = 0;
+	}
+	/*Timeout for punishment*/
+	if(punished && --punished_timout_hundreths == 0){
+		punished_timout_hundreths = 100;
+		if(--punished_timout_seconds == 0){
+			punished = false;
 		}
 	}
-	
+	/*Cooldown for moving cursor in fir_mode*/
+	if(fir_cursor_move_delay > 0) fir_cursor_move_delay--;
+	/*Timer proc for messages module*/
+	messages_timerproc();
+}
+
+//Extra
+ISR(INT0_vect){
+	if(calibration_debounce_hundreths == 0){ /*If not on cooldown*/
+		if(program_mode == FIR_MODE){
+			enter_main_mode("Game canceled");
+			uart_send_line("33A");
+			punished = true;
+			punished_timout_hundreths = 100;
+			punished_timout_seconds = PUNISH_TIMEOUT_VAL;
+		} else{
+			if(DEADMAN_PRESSED) uart_send_line("081");
+			else if(game_prompted){
+				game_prompted = false;
+				redraw = true;
+			} else if(!DEADMAN_PRESSED && (read_adc(0) > z_rest-5)){ /*If dead mans is not pressed and device is flat*/
+				z_rest = read_avg_adc(0, 25);
+				x_rest = read_avg_adc(1, 25);
+				y_rest = read_avg_adc(2, 25);
+			}
+		}
+		calibration_debounce_hundreths = DEBOUNCE_VAL;	
+	}
 }
 
 //Honk
