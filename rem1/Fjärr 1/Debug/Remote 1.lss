@@ -2807,30 +2807,30 @@ void music_play_note(uint8_t note, uint8_t bpm){
     1604:	80 91 81 00 	lds	r24, 0x0081	; 0x800081 <__TEXT_REGION_LENGTH__+0x7f8081>
     1608:	81 60       	ori	r24, 0x01	; 1
     160a:	80 93 81 00 	sts	0x0081, r24	; 0x800081 <__TEXT_REGION_LENGTH__+0x7f8081>
-	if(GET_PITCH_EXP(note) == -1){  // Stop buzzer if note is a rest
+	if(GET_PITCH_EXP(note) == -1){  /*If pitch value is zero, note is a rest*/
     160e:	6c 2f       	mov	r22, r28
     1610:	70 e0       	ldi	r23, 0x00	; 0
     1612:	6f 71       	andi	r22, 0x1F	; 31
-		TCCR1A &= ~(1<<COM1A0);
+		TCCR1A &= ~(1<<COM1A0);		/*Turn buzzer of*/
     1614:	80 91 80 00 	lds	r24, 0x0080	; 0x800080 <__TEXT_REGION_LENGTH__+0x7f8080>
 }
 
 void music_play_note(uint8_t note, uint8_t bpm){
 	TIMSK1 |= 1<<OCIE1A;
 	TCCR1B |= 1<<CS10;
-	if(GET_PITCH_EXP(note) == -1){  // Stop buzzer if note is a rest
+	if(GET_PITCH_EXP(note) == -1){  /*If pitch value is zero, note is a rest*/
     1618:	61 15       	cp	r22, r1
     161a:	71 05       	cpc	r23, r1
     161c:	21 f4       	brne	.+8      	; 0x1626 <music_play_note+0x3c>
-		TCCR1A &= ~(1<<COM1A0);
+		TCCR1A &= ~(1<<COM1A0);		/*Turn buzzer of*/
     161e:	8f 7b       	andi	r24, 0xBF	; 191
     1620:	80 93 80 00 	sts	0x0080, r24	; 0x800080 <__TEXT_REGION_LENGTH__+0x7f8080>
     1624:	21 c0       	rjmp	.+66     	; 0x1668 <music_play_note+0x7e>
-	} else{                         // Start buzzer and set correct frequency
+	} else{                         /*Start buzzer and set frequency*/
 		TCCR1A |= 1<<COM1A0;
     1626:	80 64       	ori	r24, 0x40	; 64
     1628:	80 93 80 00 	sts	0x0080, r24	; 0x800080 <__TEXT_REGION_LENGTH__+0x7f8080>
-		OCR1A = LOWC_OCR / pow(ROOT12_2,GET_PITCH_EXP(note));
+		OCR1A = LOWC_OCR/pow(ROOT12_2,GET_PITCH_EXP(note));		/*See https://en.wikipedia.org/wiki/Equal_temperament*/
     162c:	61 50       	subi	r22, 0x01	; 1
     162e:	71 09       	sbc	r23, r1
     1630:	07 2e       	mov	r0, r23
@@ -2856,7 +2856,7 @@ void music_play_note(uint8_t note, uint8_t bpm){
     1660:	70 93 89 00 	sts	0x0089, r23	; 0x800089 <__TEXT_REGION_LENGTH__+0x7f8089>
     1664:	60 93 88 00 	sts	0x0088, r22	; 0x800088 <__TEXT_REGION_LENGTH__+0x7f8088>
 	}
-	// cycles needed = frequency / (bar time) / (note length divisor)
+	// cycles needed = frequency/(time of one bar)/(note length divisor)
 	curr_note_time = ((F_CPU/(OCR1A + 1))/(bpm/(240.0)))/GET_DURATION_DIV(note);
     1668:	20 91 88 00 	lds	r18, 0x0088	; 0x800088 <__TEXT_REGION_LENGTH__+0x7f8088>
     166c:	30 91 89 00 	lds	r19, 0x0089	; 0x800089 <__TEXT_REGION_LENGTH__+0x7f8089>
@@ -2948,7 +2948,7 @@ void music_play_song_pgm(const uint8_t* song){
     1722:	0c 94 f5 0a 	jmp	0x15ea	; 0x15ea <music_play_note>
 
 00001726 <music_song_is_playing>:
-	// cycles needed = frequency / (bar time) / (note length divisor)
+	// cycles needed = frequency/(time of one bar)/(note length divisor)
 	curr_note_time = ((F_CPU/(OCR1A + 1))/(bpm/(240.0)))/GET_DURATION_DIV(note);
 }
 
@@ -2983,7 +2983,7 @@ ISR(TIMER1_COMPA_vect){
     1754:	bf 93       	push	r27
     1756:	ef 93       	push	r30
     1758:	ff 93       	push	r31
-	if(--curr_note_time == 0){
+	if(--curr_note_time == 0){ /*If note is over*/
     175a:	80 91 67 03 	lds	r24, 0x0367	; 0x800367 <curr_note_time>
     175e:	90 91 68 03 	lds	r25, 0x0368	; 0x800368 <curr_note_time+0x1>
     1762:	01 97       	sbiw	r24, 0x01	; 1
@@ -3010,7 +3010,7 @@ ISR(TIMER1_COMPA_vect){
     1790:	60 91 65 03 	lds	r22, 0x0365	; 0x800365 <curr_bpm>
     1794:	0e 94 f5 0a 	call	0x15ea	; 0x15ea <music_play_note>
     1798:	0b c0       	rjmp	.+22     	; 0x17b0 <__vector_11+0x78>
-		} else{
+		} else{ /*Else song is over. Shut buzzer off and clear song*/
 			TIMSK1 = 0;
     179a:	10 92 6f 00 	sts	0x006F, r1	; 0x80006f <__TEXT_REGION_LENGTH__+0x7f806f>
 			TCCR1B &= ~(1<<CS10);
@@ -3350,7 +3350,6 @@ void set_character_pgm(uint8_t char_code, const uint8_t rows[8]){
     1996:	28 98       	cbi	0x05, 0	; 5
 	PORTB |= 1<<CSB;
     1998:	2a 9a       	sbi	0x05, 2	; 5
-}
     199a:	df 91       	pop	r29
     199c:	cf 91       	pop	r28
     199e:	1f 91       	pop	r17

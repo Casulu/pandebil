@@ -26,7 +26,7 @@ static const volatile uint8_t* curr_song = NULL;
 
 
 void music_init(){
-	DDRB |= 1<<PINB1;
+	DDRB |= 1<<OCPIN;
 	TCCR1A = 1<<COM1A0;
 	TCCR1B = 1<<WGM12;
 }

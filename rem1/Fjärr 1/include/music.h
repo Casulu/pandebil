@@ -21,6 +21,8 @@
 
 /*A song is a zero-terminated array of notes where the first item in the array is the bpm of the song*/
 
+#define OCPIN 1
+
 #define WHOLE_NOTE 0
 #define HALF_NOTE (1<<5)
 #define QUARTER_NOTE (2<<5)
