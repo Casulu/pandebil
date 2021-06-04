@@ -5,8 +5,8 @@
 #define SS_DISP 2
 
 void display_clear();
-void display_position_cursor(int position);
-void display_move_cursor(int steps);
+void display_position_cursor(uint8_t position);
+void display_move_cursor(uint8_t steps);
 int display_put_char(char c, FILE *stream);
 void display_char(char c);
 void display_init(void);

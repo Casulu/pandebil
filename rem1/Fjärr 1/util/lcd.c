@@ -168,10 +168,3 @@ void set_character_pgm(uint8_t char_code, const uint8_t rows[8]){
 	PORTB &= ~(1<<RS);
 	PORTB |= 1<<CSB;
 }
-
-static void function_set(uint8_t table){
-	PORTB &= ~(1<<CSB);   //Clear CSB
-	spi_tx(0x38|table);
-	_delay_us(30);
-	PORTB |= 1<<CSB;
-}

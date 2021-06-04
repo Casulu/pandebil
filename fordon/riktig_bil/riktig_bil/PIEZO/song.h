@@ -7,10 +7,22 @@
 #include <stdlib.h>
 #include "piezo.h"
 
-typedef struct note note;
+#define SONG_CALC_PACE(x) (uint16_t)60000/x
 
-void song_empty(uint8_t number_of_notes, uint8_t bars_per_min);
-void song_add_note(float tone, char octave, char lenght, char number, bool pause);
+typedef struct{
+	float tone;
+	uint8_t octave;
+	uint8_t length;
+	uint8_t number;
+} note;
+
+typedef struct{
+	uint16_t pace_ms;
+	uint8_t number_of_notes;
+	const note* notes;
+} song;
+
+void song_set(const song* set_song);
 void song_start();
 void song_stop();
 bool song_playing();

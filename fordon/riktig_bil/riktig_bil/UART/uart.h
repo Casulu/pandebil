@@ -12,5 +12,4 @@ void uart_init();
 void uart_send_byte(uint8_t data);
 void uart_send_line(char* line);
 bool uart_receive_byte(uint8_t* buffer);
-void uart_flush();
 bool uart_receive_line(char* buffer);
