@@ -379,9 +379,6 @@ void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args){
 	switch(topic){
 		case '1': //From car
 			switch(command){
-				case '0': /*Emergency break triggered*/
-					messages_force("Stopp!          ");
-					break;
 				case '1': /*Sensor data received*/
 					strcpy((char*)sensor_buf, (char*)args);
 					sensors_received = true;
@@ -435,6 +432,12 @@ void perform_command(uint8_t topic, uint8_t command, volatile uint8_t* args){
 						/*Clear punished state when rem2 releases deadmans switch*/
 						punished = false;
 					}
+					break;
+				case '5': /*Emergency break triggered*/
+					messages_force("EM. BRAKES ON!");
+					break;
+				case '6': /*Emergency break triggered*/
+					messages_force("Em. brakes off");
 					break;
 			}
 			break;

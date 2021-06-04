@@ -1,7 +1,7 @@
 import serial
 import paho.mqtt.client as mqtt
 
-serialport = 'COM1'
+serialport = 'COM20'
 baudrate = 500000
 broker = "tfe.iotwan.se"
 brokerport = 1883
@@ -47,12 +47,12 @@ try:
         
     while True:
         try:
-            line = ser.readline().decode()
+            line = ser.readline().decode().strip()
         except:
             print("Could not decode incoming line")
             continue
-        if line[0] == '-':
-            print("Debug: " + line)
+        if line[0] == b'-':
+            print("Debug: " + line.decode())
         else:            
             try:
                 out_topic = topics[int(line[0])]
