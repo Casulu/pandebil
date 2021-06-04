@@ -497,6 +497,7 @@ void display_sensors(){
 	}
 }
 
+/*Receives each incoming byte and executes a snipper of code when a complete line in received*/
 ISR(USART_RX_vect){
 	uart_linebuf[uart_bufind] = UDR0;
 	if(uart_linebuf[uart_bufind] == '\n'){
